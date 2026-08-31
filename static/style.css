@@ -1,0 +1,198 @@
+:root {
+  --bg: #faf8f5;
+  --fg: #1f1b16;
+  --muted: #6b6258;
+  --border: #ddd5c9;
+  --accent: #8a4b2f;
+  --accent-bg: #f3e6dc;
+  --observed: #2f6b3f;
+  --unknown-bg: #f7f0e3;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+header.site-header {
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+header.site-header a { color: var(--fg); text-decoration: none; font-weight: 600; }
+header.site-header nav a { font-weight: 400; margin-left: 1rem; color: var(--muted); }
+header.site-header nav a:hover { color: var(--accent); }
+
+main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+h1 { font-size: 1.8rem; margin-bottom: 0.25rem; }
+h2 { font-size: 1.3rem; margin-top: 2rem; }
+p.lead { color: var(--muted); margin-top: 0; }
+
+.entry-points {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+@media (min-width: 640px) {
+  .entry-points { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.entry-point {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: var(--fg);
+  background: white;
+}
+.entry-point:hover { border-color: var(--accent); }
+.entry-point h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+.entry-point p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+form.search-form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+input[type="text"], input[type="number"] {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+}
+button {
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+}
+button:hover { opacity: 0.9; }
+
+#suggestions {
+  list-style: none;
+  margin: -0.5rem 0 1rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+}
+#suggestions li { padding: 0.5rem 0.8rem; cursor: pointer; border-bottom: 1px solid var(--border); }
+#suggestions li:last-child { border-bottom: none; }
+#suggestions li:hover { background: var(--accent-bg); }
+#suggestions:empty { display: none; border: none; }
+
+.rank-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.rank-list li {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.rank-list .rank {
+  color: var(--muted);
+  width: 1.6rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.name-block {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin: 1rem 0;
+  background: white;
+}
+.name-block h3 { margin-top: 0; }
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  margin-left: 0.4rem;
+}
+
+.empty-state {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  background: var(--unknown-bg);
+  margin: 1.5rem 0;
+}
+.empty-state p { margin: 0.5rem 0; }
+
+.split-notice {
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.compare-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.compare-columns h4 { margin: 0 0 0.4rem; font-size: 0.9rem; color: var(--muted); }
+.compare-columns ul { list-style: none; padding: 0; margin: 0; }
+.compare-columns li { padding: 0.15rem 0; }
+
+.source-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 1rem;
+}
+
+footer.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+footer.site-footer a { color: var(--muted); }
+
+.district-select { margin: 0.5rem 0 1rem; }
+
+table.limits-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+table.limits-table th, table.limits-table td {
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  text-align: left;
+}
+table.limits-table th { background: var(--accent-bg); }

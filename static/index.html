@@ -1,0 +1,49 @@
+<title>imena-rs</title>
+<link rel="stylesheet" href="/static/style.css" />
+
+<header class="site-header">
+  <a href="/">imena-rs</a>
+  <nav>
+    <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Kako su se zvali ljudi iz vaše generacije i vašeg kraja?</h1>
+  <p class="lead">
+    Mapa naming mode kroz mesto i generaciju — zasnovana na popisu 2022. i
+    godišnjim statistikama rođenih 2021–2025.
+  </p>
+
+  <div class="entry-points">
+    <a class="entry-point" href="#name-search">
+      <h3>Kako se zoveš?</h3>
+      <p>Pronađi ime i vidi kada je bilo najčešće.</p>
+    </a>
+    <a class="entry-point" href="/static/generation.html">
+      <h3>Rođen/a sam...</h3>
+      <p>Vidi koja su imena bila najčešća te godine.</p>
+    </a>
+    <a class="entry-point" href="/static/newborn.html">
+      <h3>Najnovija imena</h3>
+      <p>Najčešća imena novorođenih, 2021–2025, po oblastima.</p>
+    </a>
+  </div>
+
+  <h2 id="name-search">Pretraga imena</h2>
+  <form class="search-form" id="name-form" autocomplete="off">
+    <input type="text" id="name-input" placeholder="npr. Goran" />
+    <button type="submit">Traži</button>
+  </form>
+  <ul id="suggestions"></ul>
+
+  <div id="result"></div>
+</main>
+
+<footer class="site-footer">
+  Izvor: Republički zavod za statistiku (Popis 2022; vitalna statistika
+  2021–2025). Obrada: imena-rs. ·
+  <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
+</footer>
+
+<script type="module" src="/static/name-search.js"></script>

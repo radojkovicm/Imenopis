@@ -1,0 +1,69 @@
+<title>imena-rs — novorođena deca</title>
+<link rel="stylesheet" href="/static/style.css" />
+
+<header class="site-header">
+  <a href="/">imena-rs</a>
+  <nav>
+    <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Najčešća imena novorođenih</h1>
+  <p class="lead">
+    Godišnja statistika Republičkog zavoda za statistiku, 2021–2025. Rang, ne
+    broj rođenih — izvor ne objavljuje apsolutne brojeve za ovu tabelu.
+  </p>
+
+  <form class="search-form" id="newborn-form">
+    <select id="year-select">
+      <option value="2021">2021</option>
+      <option value="2022">2022</option>
+      <option value="2023" selected>2023</option>
+      <option value="2024">2024</option>
+      <option value="2025">2025</option>
+    </select>
+    <button type="submit">Prikaži</button>
+  </form>
+
+  <div class="district-select">
+    <label for="district-select">Oblast:</label>
+    <select id="district-select">
+      <option value="">Republika Srbija (ukupno)</option>
+      <option value="beogradska">Beogradska oblast (Grad Beograd)</option>
+      <option value="zapadnobacka">Zapadnobačka oblast</option>
+      <option value="juznobanatska">Južnobanatska oblast</option>
+      <option value="juznobacka">Južnobačka oblast</option>
+      <option value="severnobanatska">Severnobanatska oblast</option>
+      <option value="severnobacka">Severnobačka oblast</option>
+      <option value="srednjobanatska">Srednjobanatska oblast</option>
+      <option value="sremska">Sremska oblast</option>
+      <option value="zlatiborska">Zlatiborska oblast</option>
+      <option value="kolubarska">Kolubarska oblast</option>
+      <option value="macvanska">Mačvanska oblast</option>
+      <option value="moravicka">Moravička oblast</option>
+      <option value="pomoravska">Pomoravska oblast</option>
+      <option value="rasinska">Rasinska oblast</option>
+      <option value="raska">Raška oblast</option>
+      <option value="sumadijska">Šumadijska oblast</option>
+      <option value="borska">Borska oblast</option>
+      <option value="branicevska">Braničevska oblast</option>
+      <option value="zajecarska">Zaječarska oblast</option>
+      <option value="jablanicka">Jablanička oblast</option>
+      <option value="nisavska">Nišavska oblast</option>
+      <option value="pirotska">Pirotska oblast</option>
+      <option value="podunavska">Podunavska oblast</option>
+      <option value="pcinjska">Pčinjska oblast</option>
+      <option value="toplicka">Toplička oblast</option>
+    </select>
+  </div>
+
+  <div id="newborn-result"></div>
+</main>
+
+<footer class="site-footer">
+  Izvor: Republički zavod za statistiku (vitalna statistika 2021–2025).
+  Obrada: imena-rs.
+</footer>
+
+<script type="module" src="/static/newborn.js"></script>

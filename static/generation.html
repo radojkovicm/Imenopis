@@ -1,0 +1,38 @@
+<title>imena-rs — po godini rođenja</title>
+<link rel="stylesheet" href="/static/style.css" />
+
+<header class="site-header">
+  <a href="/">imena-rs</a>
+  <nav>
+    <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Rođen/a sam...</h1>
+  <p class="lead">
+    Najčešća imena u Srbiji po godini rođenja (1941–2022), na republičkom nivou.
+    Izvor objavljuje samo prvih pet imena za pojedinačnu godinu rođenja.
+  </p>
+
+  <form class="search-form" id="year-form">
+    <input type="number" id="year-input" min="1941" max="2022" placeholder="npr. 1988" />
+    <button type="submit">Prikaži</button>
+  </form>
+
+  <div id="year-result"></div>
+
+  <h2>Uporedi dve generacije</h2>
+  <form class="search-form" id="compare-form">
+    <input type="number" id="year-a" min="1941" max="2022" placeholder="npr. 1988" />
+    <input type="number" id="year-b" min="1941" max="2022" placeholder="npr. 2008" />
+    <button type="submit">Uporedi</button>
+  </form>
+  <div id="compare-result"></div>
+</main>
+
+<footer class="site-footer">
+  Izvor: Republički zavod za statistiku (Popis 2022). Obrada: imena-rs.
+</footer>
+
+<script type="module" src="/static/generation.js"></script>
