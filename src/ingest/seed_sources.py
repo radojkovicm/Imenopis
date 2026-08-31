@@ -10,6 +10,8 @@ from src.db.models import DataSource
 
 RETRIEVED_AT = date(2026, 8, 31)
 
+CENSUS_T1_KEY = "census_2022_t1"
+CENSUS_T2_KEY = "census_2022_t2"
 CENSUS_T3_KEY = "census_2022_t3"
 
 NEWBORN_KEYS = {
@@ -32,6 +34,26 @@ NEWBORN_URLS = {
 def seed_rows() -> list[DataSource]:
     rows = [
         DataSource(
+            key=CENSUS_T1_KEY,
+            title="Najčešća imena i prezimena — Tabela 1 (najčešća ženska imena po opštinama)",
+            url="https://publikacije.stat.gov.rs/G2024/Pdf/G20244001.pdf",
+            table_ref="Tabela 1",
+            scope="municipality x cohort x gender(F)",
+            measure="rank",
+            retrieved_at=RETRIEVED_AT,
+            notes="9 cohorts (not 11). See docs/DATA_NOTES.md §4, §7.",
+        ),
+        DataSource(
+            key=CENSUS_T2_KEY,
+            title="Najčešća imena i prezimena — Tabela 2 (najčešća muška imena po opštinama)",
+            url="https://publikacije.stat.gov.rs/G2024/Pdf/G20244001.pdf",
+            table_ref="Tabela 2",
+            scope="municipality x cohort x gender(M)",
+            measure="rank",
+            retrieved_at=RETRIEVED_AT,
+            notes="9 cohorts (not 11). See docs/DATA_NOTES.md §4, §7.",
+        ),
+        DataSource(
             key=CENSUS_T3_KEY,
             title="Najčešća imena i prezimena — Tabela 3 (najčešća imena po godini rođenja)",
             url="https://publikacije.stat.gov.rs/G2024/Pdf/G20244001.pdf",
@@ -40,7 +62,7 @@ def seed_rows() -> list[DataSource]:
             measure="rank",
             retrieved_at=RETRIEVED_AT,
             notes="Ranks I-V only (top 5), not I-X. See docs/DATA_NOTES.md §6a.",
-        )
+        ),
     ]
     for year, key in NEWBORN_KEYS.items():
         rows.append(

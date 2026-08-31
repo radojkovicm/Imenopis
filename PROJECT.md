@@ -511,9 +511,11 @@ different statistical definitions is never done implicitly.
 
 ### 6.7 Volume
 
-~170 municipalities × 11 cohorts × 2 genders × 10 ranks ≈ **37,400** rows in
-`census_rank`; ~1,700 in `census_rank_by_year`; a few hundred in the newborn
-layer. Trivial. No partitioning, no cache layer, no search engine.
+168 municipalities (confirmed exactly — §7 of `docs/DATA_NOTES.md`) × 9
+cohorts × 2 genders × 10 ranks ≈ **30,240** rows in `census_rank`; 830 in
+`census_rank_by_year` (§6a of `docs/DATA_NOTES.md`: 83 years × 2 genders × 5
+ranks); a few hundred in the newborn layer. Trivial. No partitioning, no
+cache layer, no search engine.
 
 ---
 
@@ -696,12 +698,18 @@ loader should handle it (store verbatim, flag, never silently strip).
       not; the hazard doesn't apply to this source** (see above)
 - [x] Belgrade: city municipalities separately, aggregated, or both — **both**;
       17 opštine appear individually and there's also one Republic-facing
-      aggregate row for `Београдска област (Град Београд)` — decide which
-      feeds `census_rank.municipality_id` before writing the parser
-- [x] **Municipality count** — not exactly counted yet; TOC (PDF pages 7–11)
-      lists every municipality by name and matches the region→oblast→opština
-      nesting; get the authoritative count from the RZS spatial register
-      (§3.3) when seeding `municipality`, not by hand-counting the TOC
+      aggregate row for `Београдска област (Град Београд)`. **Resolved in
+      Phase 3** (`docs/DATA_NOTES.md` §7.3): the 17 opštine feed
+      `census_rank.municipality_id`; the aggregate row is not loaded. Four
+      other cities (Ужице, Пожаревац, Ниш, Врање) have the same
+      grad-with-subdistricts pattern at smaller scale (2, 2, 5, 2
+      sub-districts respectively)
+- [x] **Municipality count** — **168, confirmed exactly** in Phase 3 by
+      extracting the full geography tree from the PDF's own table of
+      contents (`docs/DATA_NOTES.md` §7): 140 plain opština/grad entries +
+      28 sub-districts of the 5 multi-district cities. The RZS spatial
+      register (§3.3) still isn't integrated for real `code_rzs` values —
+      `code_rzs` is a stable name-slug placeholder for now
 - [x] Tied ranks present? — none observed in T1, T2, T3, T4, or T5 samples
 
 Extra findings beyond the original checklist, also in `docs/DATA_NOTES.md`:

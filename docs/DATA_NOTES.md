@@ -256,17 +256,91 @@ Parser output verified against the §3.1 known-facts fixtures: 830 rows total
 Софија/Мила/Дуња/Теодора/Сара, 2022 male top 5 = Лука/Лазар/Василије/Богдан/Вук,
 `1940. и раније` both genders match the fixture list exactly.
 
+## 7. Phase 3 finding: geography tree extracted from the PDF's own TOC (2026-08-31)
+
+Building the T1/T2 (municipality-level) parser required a reliable geography
+reference first — the body pages have no position-based way to tell a
+geography-label row from a cohort-label row that's also reliable at every
+nesting depth (see the next section). The census PDF's own table of contents
+(pages 7–11, `src/ingest/toc_extractor.py`) turned out to be a complete,
+authoritative source for this: one `name ......... page_number` line per
+geography unit, in a stable two-column layout, covering both Table 1's and
+Table 2's identical municipality lists.
+
+**Ground truth, cross-checked twice independently (once via a scratch script,
+once via the final module) and confirmed self-consistent:**
+
+- **25 oblasts** (districts) — matches `src/ingest/geography.py`'s
+  `DISTRICT_CODES`, built independently from the newborn XLSX files in Phase 1.
+  Same 25 names, two unrelated sources.
+- **140 plain opština/grad entries** at the municipality level.
+- **5 "Grad X" entries that are themselves rollups** with sub-district rows
+  beneath them, confirmed by reading each one's actual body pages, not
+  inferred from indentation alone (indentation alone is not reliable — see
+  below): **Beograd** (17 opštine — Барајево, Вождовац, Врачар, Гроцка,
+  Звездара, Земун, Лазаревац, Младеновац, Нови Београд, Обреновац, Палилула,
+  Раковица, Савски венац, Сопот, Стари град, Сурчин, Чукарица), **Ужице**
+  (Ужице, Севојно), **Пожаревац** (Пожаревац, Костолац), **Ниш** (Медијана,
+  Нишка Бања, Палилула, Пантелеј, Црвени крст), **Врање** (Врање, Врањска
+  Бања). 17+2+2+5+2 = 28 sub-district rows.
+- **140 + 28 = 168 real municipality-level units** total. This resolves
+  Phase 0's open item #1 (exact municipality count) — it's 168, not the ~170
+  PROJECT.md estimated (close, but now exact) — and confirms the census
+  publication does cover roughly this many municipalities as expected.
+- **Naming collision found and kept, not merged**: `Палилула` is both a
+  Belgrade opština and a Niš city district — two real, different places.
+  Both are stored as separate `municipality` rows, disambiguated by
+  `code_rzs` (a slug of the parent+name for the Niš one, since RZS's real
+  spatial-register codes — §3.3 — aren't integrated yet).
+- **A font/encoding quirk found in the source itself**: the region label
+  `Регион Косовo и Метохијa` (rollup, no data underneath — census wasn't
+  conducted there) mixes Latin `o` (U+006F) and Latin `a` (U+0061) into
+  otherwise-Cyrillic words. Confirmed by codepoint inspection — this is a
+  quirk in the PDF's actual character stream, not a transcription error made
+  while investigating it.
+
+### 7.1 Why the TOC and not the body pages
+
+The body pages have no reliable geography-vs-cohort discriminator by x0
+position alone at every nesting depth: a "Grad Ниш" sub-district row like
+`Медијана` lands at the **same x-position as a cohort-label row** on that
+page (both are one indent level deeper than a normal oblast/opština row).
+Only text content reliably tells them apart (the 9 known cohort label
+strings vs. everything else) — position helps but isn't sufficient alone,
+confirming `PROJECT007.md` §11.2's instruction to use bounding boxes rather
+than trusting layout/position heuristics in isolation.
+
+### 7.2 Row-clustering pitfall (fixed)
+
+`pdfplumber`'s per-word `top` coordinate can jitter by a fraction of a point
+between words on the same visual line — e.g. `Западнобачка` at `top=402.41`
+and its continuation `област` at `top=402.46` on the *same line*, which
+`round(top, 1)` puts in **different** buckets (402.4 vs 402.5), silently
+splitting one TOC row into two and losing the half with the page number —
+which then drops that oblast from the extracted list entirely (confirmed:
+this exact bug caused one oblast, `Западнобачка област`, to go missing from
+the first extraction pass). Fixed by switching to `pdfplumber.utils.
+cluster_objects` with `tolerance=3` instead of naive rounding. **Any future
+PDF word-position extraction in this project should use the same
+tolerance-based clustering, not `round(top, N)`.**
+
+### 7.3 Belgrade decision (resolves Phase 0 open item #2)
+
+Both the 17 individual opštine and one Beograd-wide aggregate row exist in
+the source. **Decision: `census_rank`/`municipality` are seeded from the 17
+opštine** (and similarly the real sub-districts of Užice/Požarevac/Niš/
+Vranje), not from the 5 "Grad X" aggregate rows — the finer-grained, directly
+auditable rows. The aggregate rows are not loaded into `municipality` at all,
+so there's no risk of the same resident being representable at two
+granularities under different `municipality_id`s.
+
 ## 6. Open items carried forward (update `PROJECT007.md` §9 checklist status)
 
 All §9.1 and §9.2 checklist items are now answered above. Remaining
 non-blocking follow-ups:
 
-1. **Exact municipality count** — not yet cross-checked against the RZS
-   spatial register (§3.3); do this when building the `municipality` seed data,
-   not before.
-2. **Belgrade municipality vs. aggregate** — both levels exist in the source;
-   decide which feeds `census_rank` before writing the T1/T2 parser (see §4
-   table above).
+1. ~~Exact municipality count~~ **RESOLVED: 168** — see §7 above.
+2. ~~Belgrade municipality vs. aggregate~~ **RESOLVED** — see §7.3 above.
 3. **2021 XLSX row anomaly** (§2.2) — confirm during ingestion whether any
    other year/cell has a similar "name + lowercase surname" data-entry error;
    the loader's validator should generically flag any name cell containing

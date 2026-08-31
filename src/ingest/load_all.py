@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from src.db.models import CensusRankByYear, District, GivenName, NewbornName
 from src.db.session import get_session, init_db
 from src.ingest.geography import DISTRICT_CODES
+from src.ingest.load_census_rank import load_census_rank, load_cohorts, load_municipalities
 from src.ingest.pdf_parser import parse_table3
 from src.ingest.seed_sources import CENSUS_T3_KEY, NEWBORN_KEYS, seed_rows
 from src.ingest.xlsx_loader import XlsxStructureError, load_year
@@ -187,6 +188,14 @@ def main() -> None:
         district_ids = load_districts(session)
         load_table3(session)
         load_newborn(session, district_ids)
+
+        if CENSUS_PDF.exists():
+            cohort_ids = load_cohorts(session)
+            municipality_ids = load_municipalities(session, CENSUS_PDF, district_ids)
+            print(f"Municipalities: loaded {len(municipality_ids)} distinct names")
+            load_census_rank(session, CENSUS_PDF, municipality_ids, cohort_ids)
+        else:
+            print(f"SKIP census_rank (Table 1/2): {CENSUS_PDF} not found", file=sys.stderr)
     finally:
         session.close()
 
