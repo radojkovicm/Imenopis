@@ -1,9 +1,25 @@
 """GET /api/name/{search_key} (PROJECT.md §12, §7.1, §7.2).
 
-One block per matching given_name - because search_key is not unique
-(§6.1), a search can resolve to more than one given_name (§7.2's split-name
-state). Each block carries its own source attribution; blocks are never
-summed across given_name rows (§6.2).
+search_key is not unique (§6.1) for two different reasons, and this endpoint
+must not conflate them:
+
+1. **Genuinely different spellings** sharing a search_key (the actual §7.2
+   split-name case, e.g. Đorđe/Djordje, or Mihajlo/Mihailo folding together
+   - though in practice those two don't share a search_key, see
+   docs/DATA_NOTES.md §5). These get separate display blocks and the
+   split_notice.
+2. **The same spelling appearing in several source tables** - one given_name
+   row per year (source_key = newborn_2021..newborn_2025) plus one for
+   census_2022_t3, all with an identical source_form. This is NOT a spelling
+   split; it's the natural consequence of source_key identifying "the
+   specific table or edition" (§6.1). Presenting these as separate cards
+   would misrepresent a data-modeling artifact as a linguistic finding.
+
+So: group given_name rows by (source_form, gender) for display. Each group
+becomes one block whose per-row observations (timeline entries, newborn
+appearances) are merged and still individually source-attributed; the block
+itself is never treated as a merged statistical unit for anything beyond
+that (§6.2 still applies - across DIFFERENT source_forms, nothing is summed).
 
 Phase 1 scope: only Table 3 (national, by birth year) and the newborn XLSX
 layer are loaded (Step 1 of §10's build order). Table 1/2 (municipality-level
@@ -88,27 +104,39 @@ def get_name(search_key: str, gender: str | None = None, session: Session = Depe
             "result": UnknownValue(reason="source_is_top10_only").model_dump(),
         }
 
-    blocks = []
+    # Group by (source_form, gender): see module docstring for why this is
+    # not the same thing as grouping by given_name_id.
+    groups: dict[tuple[str, str], list[GivenName]] = {}
     for gn in matches:
-        national_by_year = _timeline_by_year(session, gn.id)
-        newborn = _newborn_appearances(session, gn.id)
+        groups.setdefault((gn.source_form, gn.gender), []).append(gn)
+
+    blocks = []
+    for (source_form, gender_val), gn_rows in groups.items():
+        national_by_year: list[dict] = []
+        newborn: list[dict] = []
+        source_keys = []
+        for gn in gn_rows:
+            source_keys.append(gn.source_key)
+            national_by_year.extend(_timeline_by_year(session, gn.id))
+            newborn.extend(_newborn_appearances(session, gn.id))
+        national_by_year.sort(key=lambda r: r["birth_year"])
+        newborn.sort(key=lambda r: (r["year"], r["district"] or ""))
 
         block = {
-            "given_name_id": gn.id,
-            "source_form": gn.source_form,
-            "source_key": gn.source_key,
-            "gender": gn.gender,
+            "source_form": source_form,
+            "source_keys": sorted(source_keys),
+            "gender": gender_val,
             "national_timeline_by_year": ObservedValue(
                 value=national_by_year,
                 source="census_2022_t3",
-                scope=Scope(gender=gn.gender),
+                scope=Scope(gender=gender_val),
             ).model_dump()
             if national_by_year
             else UnknownValue(reason="source_is_top5_only").model_dump(),
             "newborn_timeline": ObservedValue(
                 value=newborn,
                 source="newborn_2021..2025",  # each item also carries its own year-specific source
-                scope=Scope(gender=gn.gender),
+                scope=Scope(gender=gender_val),
             ).model_dump()
             if newborn
             else UnknownValue(reason="scope_not_published").model_dump(),
@@ -119,13 +147,16 @@ def get_name(search_key: str, gender: str | None = None, session: Session = Depe
         }
         blocks.append(block)
 
-    # §7.2: surface the split explicitly when search resolves to >1 given_name.
+    # §7.2: surface the split explicitly only when genuinely different
+    # spellings/forms are present - not when the same spelling simply spans
+    # several source_keys (see module docstring).
     split_notice = None
-    if len({b["source_form"] for b in blocks}) > 1:
-        forms = ", ".join(sorted({b["source_form"] for b in blocks}))
+    distinct_forms = sorted({b["source_form"] for b in blocks})
+    if len(distinct_forms) > 1:
         split_notice = (
-            f"Izvor vodi {len(blocks)} odvojena zapisa za ovo ime: {forms}. "
-            "Prikazujemo ih odvojeno jer ih statistika ne spaja."
+            f"Izvor vodi {len(distinct_forms)} odvojena zapisa za ovo ime: "
+            f"{', '.join(distinct_forms)}. Prikazujemo ih odvojeno jer ih "
+            "statistika ne spaja."
         )
 
     return {
