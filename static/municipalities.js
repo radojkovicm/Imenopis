@@ -1,4 +1,8 @@
 import { listMunicipalities } from "/static/api.js";
+import { installScriptToggle } from "/static/script.js";
+
+installScriptToggle(document.getElementById("site-header"));
+window.addEventListener("scriptprefchange", load);
 
 // Mirrors src/util/normalize.py's diacritic fold (Latin side only - this
 // page's filter box is typed in Latin script even though the data is

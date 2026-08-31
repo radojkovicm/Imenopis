@@ -3,8 +3,10 @@
 **Version 2. Supersedes the previous `PROJECT.md`, `PROJECT_ADDENDUM.md` and
 `PROJECT_ADDENDUM_V2.md`. Delete all three.** This is the only specification.
 
-Working slug: `imena-rs`. The public name is undecided and appears in exactly one
-place — `config.SITE_NAME` — and nowhere else in code, templates or copy.
+Working slug: `imena-rs`. **Public name decided: `imenopis.rs`** (set in
+`config.SITE_NAME`, and hardcoded into the static pages' `<title>`, header and
+footer copy since they have no server-side templating — see PROJECT.md §13's
+folder layout and §6.2's "no build step" constraint).
 
 **Stack (fixed):** Python 3.11+, FastAPI, SQLAlchemy, Pydantic, PostgreSQL,
 vanilla JS. Dev on Windows in VS Code, production on a Linux VPS behind Docker.

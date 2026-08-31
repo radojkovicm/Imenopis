@@ -1,17 +1,32 @@
 import { getGeneration, compareGenerations, getAcrossDecades } from "/static/api.js";
 import { renderRankList, renderUnknownNote, isKnown } from "/static/evidence.js";
+import { installScriptToggle } from "/static/script.js";
+
+installScriptToggle(document.getElementById("site-header"));
+window.addEventListener("scriptprefchange", () => {
+  if (lastYear) loadYear(lastYear);
+  if (lastCompareA && lastCompareB) loadCompare(lastCompareA, lastCompareB);
+  if (lastDecadesYear) loadDecades(lastDecadesYear);
+});
 
 const yearForm = document.getElementById("year-form");
 const yearInput = document.getElementById("year-input");
 const yearResult = document.getElementById("year-result");
 
+let lastYear = null;
+
+async function loadYear(year) {
+  lastYear = year;
+  yearResult.innerHTML = "<p>Tražim…</p>";
+  const data = await getGeneration(year);
+  renderYearResult(data);
+}
+
 yearForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const year = parseInt(yearInput.value, 10);
   if (!year) return;
-  yearResult.innerHTML = "<p>Tražim…</p>";
-  const data = await getGeneration(year);
-  renderYearResult(data);
+  loadYear(year);
 });
 
 function renderYearResult(data) {
@@ -48,14 +63,23 @@ const yearAInput = document.getElementById("year-a");
 const yearBInput = document.getElementById("year-b");
 const compareResult = document.getElementById("compare-result");
 
+let lastCompareA = null;
+let lastCompareB = null;
+
+async function loadCompare(a, b) {
+  lastCompareA = a;
+  lastCompareB = b;
+  compareResult.innerHTML = "<p>Poredim…</p>";
+  const data = await compareGenerations(a, b);
+  renderCompareResult(data);
+}
+
 compareForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const a = parseInt(yearAInput.value, 10);
   const b = parseInt(yearBInput.value, 10);
   if (!a || !b) return;
-  compareResult.innerHTML = "<p>Poredim…</p>";
-  const data = await compareGenerations(a, b);
-  renderCompareResult(data);
+  loadCompare(a, b);
 });
 
 function renderCompareResult(data) {
@@ -118,13 +142,20 @@ const decadesForm = document.getElementById("decades-form");
 const decadesYearInput = document.getElementById("decades-year");
 const decadesResult = document.getElementById("decades-result");
 
+let lastDecadesYear = null;
+
+async function loadDecades(year) {
+  lastDecadesYear = year;
+  decadesResult.innerHTML = "<p>Tražim…</p>";
+  const data = await getAcrossDecades(year);
+  renderDecadesResult(data);
+}
+
 decadesForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const year = parseInt(decadesYearInput.value, 10);
   if (!year) return;
-  decadesResult.innerHTML = "<p>Tražim…</p>";
-  const data = await getAcrossDecades(year);
-  renderDecadesResult(data);
+  loadDecades(year);
 });
 
 function renderDecadesResult(data) {

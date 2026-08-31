@@ -1,10 +1,14 @@
 import { getNewborn } from "/static/api.js";
 import { renderRankList, renderUnknownNote, isKnown } from "/static/evidence.js";
+import { installScriptToggle } from "/static/script.js";
 
 const form = document.getElementById("newborn-form");
 const yearSelect = document.getElementById("year-select");
 const districtSelect = document.getElementById("district-select");
 const resultEl = document.getElementById("newborn-result");
+
+installScriptToggle(document.getElementById("site-header"));
+window.addEventListener("scriptprefchange", load);
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();

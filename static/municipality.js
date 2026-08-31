@@ -1,8 +1,12 @@
 import { getMunicipality } from "/static/api.js";
 import { isKnown } from "/static/evidence.js";
+import { installScriptToggle } from "/static/script.js";
 
 const titleEl = document.getElementById("muni-title");
 const resultEl = document.getElementById("muni-result");
+
+installScriptToggle(document.getElementById("site-header"));
+window.addEventListener("scriptprefchange", load);
 
 const params = new URLSearchParams(window.location.search);
 const slug = params.get("slug");
@@ -42,12 +46,15 @@ function renderControls() {
 
   const cohortSelect = document.createElement("select");
   const femaleCohorts = data.cohorts.female;
-  femaleCohorts.forEach((c, idx) => {
+  // Newest cohort first in the dropdown list, for consistency with the
+  // rest of the site's ranking/timeline displays.
+  const indicesNewestFirst = femaleCohorts.map((_, idx) => idx).reverse();
+  for (const idx of indicesNewestFirst) {
     const opt = document.createElement("option");
     opt.value = String(idx);
-    opt.textContent = c.cohort;
+    opt.textContent = femaleCohorts[idx].cohort;
     cohortSelect.appendChild(opt);
-  });
+  }
   cohortSelect.value = String(femaleCohorts.length - 1); // default: most recent cohort
 
   controls.append(genderSelect, cohortSelect);

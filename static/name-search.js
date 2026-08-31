@@ -1,10 +1,17 @@
 import { suggest, getName } from "/static/api.js";
 import { renderRankList, renderUnknownNote, isKnown } from "/static/evidence.js";
+import { installScriptToggle } from "/static/script.js";
 
 const form = document.getElementById("name-form");
 const input = document.getElementById("name-input");
 const suggestionsEl = document.getElementById("suggestions");
 const resultEl = document.getElementById("result");
+
+installScriptToggle(document.getElementById("site-header"));
+let lastQuery = null;
+window.addEventListener("scriptprefchange", () => {
+  if (lastQuery) search(lastQuery);
+});
 
 let suggestTimer = null;
 
@@ -43,6 +50,7 @@ form.addEventListener("submit", (e) => {
 
 async function search(rawQuery) {
   if (!rawQuery) return;
+  lastQuery = rawQuery;
   resultEl.innerHTML = "<p>Tražim…</p>";
   const data = await getName(rawQuery);
 
@@ -87,9 +95,10 @@ function renderNameBlock(block) {
   wrap.appendChild(natHeading);
   if (isKnown(nat) && nat.value.length > 0) {
     const list = document.createElement("div");
+    const sorted = [...nat.value].sort((a, b) => b.birth_year - a.birth_year);
     renderRankList(
       list,
-      nat.value.map((r) => ({ rank: r.rank, name: `rođeni ${r.birth_year}.` }))
+      sorted.map((r) => ({ rank: r.rank, name: `rođeni ${r.birth_year}.` }))
     );
     wrap.appendChild(list);
   } else {
@@ -103,9 +112,10 @@ function renderNameBlock(block) {
   wrap.appendChild(nbHeading);
   if (isKnown(newborn) && newborn.value.length > 0) {
     const list = document.createElement("div");
+    const sorted = [...newborn.value].sort((a, b) => b.year - a.year || (a.district || "").localeCompare(b.district || ""));
     renderRankList(
       list,
-      newborn.value.map((r) => ({
+      sorted.map((r) => ({
         rank: r.rank,
         name: r.district ? `${r.year}. — ${r.district}` : `${r.year}. — Republika Srbija`,
       }))

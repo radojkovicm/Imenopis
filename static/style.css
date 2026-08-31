@@ -33,6 +33,30 @@ header.site-header a { color: var(--fg); text-decoration: none; font-weight: 600
 header.site-header nav a { font-weight: 400; margin-left: 1rem; color: var(--muted); }
 header.site-header nav a:hover { color: var(--accent); }
 
+.script-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-left: 1rem;
+}
+.script-toggle button {
+  background: white;
+  color: var(--muted);
+  border: none;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 0;
+}
+.script-toggle button.active {
+  background: var(--accent);
+  color: white;
+}
+.script-toggle button:not(.active):hover {
+  background: var(--accent-bg);
+}
+
 main {
   max-width: 780px;
   margin: 0 auto;
