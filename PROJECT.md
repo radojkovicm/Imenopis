@@ -69,7 +69,7 @@ All links verified 2026-08-31.
 |-------|---------|-------------|---------|
 | T1 | Ten most frequent **female** names | Republic → region → district → municipality × 9 cohorts | No |
 | T2 | Ten most frequent **male** names | Same | No |
-| T3 | Most frequent female and male names | **Republic only**, by single birth year (~1940–2022) | No |
+| T3 | Most frequent female and male names | **Republic only**, by single birth year (~1940–2022), **top 5 only (ranks I–V), not top 10** | No |
 | T4 | Ten most frequent surnames | Republic → region → district → municipality (same nesting as T1/T2) | No |
 | T5 | Most frequent name + surname combinations | Republic, by gender, **top 20** | No |
 
