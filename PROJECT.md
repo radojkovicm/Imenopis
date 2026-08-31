@@ -822,7 +822,7 @@ never interpolated from neighbouring rows, never taken from the national list.
 
 The loader refuses to commit if any fail:
 
-- Every municipality has exactly 11 cohorts.
+- Every municipality has exactly 9 cohorts (corrected by Phase 0 — see §9.1).
 - Every (municipality, cohort, gender) has ranks 1..10 with no gaps — allowing
   ties if Phase 0 found them.
 - Every name in `census_rank` resolves to a `given_name` row.
