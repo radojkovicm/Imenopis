@@ -1,152 +1,112 @@
-# Project: `kakosezoves` — Serbian Name Statistics Explorer
+# PROJECT.md — Serbian Name Statistics Explorer
 
-> Working name. Alternative: `imena-rs`. Domain idea: `kakosezoves.rs` (mirrors the
-> Slovenian app's framing "Kako se imenujete?").
+**Version 2. Supersedes the previous `PROJECT.md`, `PROJECT_ADDENDUM.md` and
+`PROJECT_ADDENDUM_V2.md`. Delete all three.** This is the only specification.
 
-**Goal:** a public web app where a user types a first name (e.g. `Goran`) and sees
-where that name ranks across Serbian municipalities and birth cohorts — the closest
-achievable equivalent to Slovenia's `stat.si/imenarojstva`, given that Serbian
-official statistics publish **ranks, not absolute counts**, for first names.
+Working slug: `imena-rs`. The public name is undecided and appears in exactly one
+place — `config.SITE_NAME` — and nowhere else in code, templates or copy.
 
-**Stack (fixed):** Python 3.11+ / FastAPI / SQLAlchemy / Pydantic, PostgreSQL,
-vanilla JS frontend (no framework). Dev on Windows in VS Code, production on a
-Linux VPS behind Docker.
+**Stack (fixed):** Python 3.11+, FastAPI, SQLAlchemy, Pydantic, PostgreSQL,
+vanilla JS. Dev on Windows in VS Code, production on a Linux VPS behind Docker.
+No new libraries without a stated reason.
 
----
-
-## 1. Reference implementation: what the Slovenian app does
-
-Source: <https://www.stat.si/imenarojstva> (SURS — Statistical Office of Slovenia).
-The site blocks automated fetching, so the feature list below is assembled from
-SURS press releases and the app's own visible text. **Verify by hand before
-copying any UX decision.**
-
-### 1.1 Data foundation
-
-- Backed by the **Central Population Register**, refreshed **annually** (current
-  release: 1 January 2026, population 2,135,107).
-- Publishes **absolute frequencies per name**, not ranks.
-- Coverage is total: Slovenia has ~64,000 distinct first names and ~143,000
-  distinct surnames; ~71% of names are unique to a single person.
-- **Statistical confidentiality:** names/surnames held by fewer than 5 residents
-  are not displayed at all. Breakdowns by statistical region and birth period are
-  additionally protected using the *missing values* method (individual cells
-  suppressed).
-
-### 1.2 Features
-
-| # | Feature | Notes |
-|---|---------|-------|
-| 1 | Search by **first name** | With gender selection. Returns count, rank, share. |
-| 2 | Search by **surname** | Returns count. |
-| 3 | Search by **name + surname combination** | Both fields; at least one required. |
-| 4 | Search by **birth date** | "How many residents share your birthday." Not available for dates before a cutoff. |
-| 5 | Breakdown by **statistical region** | NUTS-3, 12 regions. |
-| 6 | Breakdown by **birth period** | Decade-style buckets. |
-| 7 | **Autocomplete** while typing | Suggests names and surnames mid-entry. |
-| 8 | **Compare two names** side by side | Added in the 2019 redesign. |
-| 9 | Curated editorial sections | "Most frequent names", "Newborn names", "Disappearing names", "Modern names", "Most frequent surnames". |
-| 10 | Interactive visualisations | Charts and infographics per name. |
-
-### 1.3 Croatian equivalent (second reference)
-
-<https://web.dzs.hr/app/imena/default.aspx> (DZS — Croatian Bureau of Statistics).
-Same idea, census-based rather than register-based. Search by name, surname, or
-combination. Suppression threshold is **fewer than 10** persons. Worth opening for
-UI ideas — it is a simpler, older implementation than the Slovenian one.
+Two decisions in this document are **branches** resolved by Phase 0 (§9). They are
+marked `BRANCH A` (counts) and `BRANCH B` (variant spellings). After Phase 0,
+delete the dead branch from this file.
 
 ---
 
-## 2. Data reality for Serbia — read this before designing anything
+## 1. What this is
 
-**There is no Serbian dataset with absolute counts per first name.** This has been
-checked across: the RZS census publication, the RZS open data portal
-(`opendata.stat.gov.rs/odata`, 731 datasets, 23 categories — no names dataset
-found), the national open data portal, and GitHub. Absence of a search hit is not
-proof of non-existence, but nothing surfaced.
+A public web app where someone types a first name — `Goran` — and sees where it
+ranked across Serbian municipalities and birth cohorts, plus what the top names
+were in any birth year.
 
-What this means concretely:
+**Positioning: a map of naming fashion across place and generation.** Not "how
+many of us are there." Serbian official statistics publish ranks, not counts, for
+first names (§2). Building the product around counts would promise something the
+data cannot deliver; building it around geography and generations delivers
+something no one has built for Serbia.
 
-- ✅ We CAN answer: *"Where did the name Goran rank in Šabac among people born
-  1971–1980?"*
-- ❌ We CANNOT answer: *"How many people in Serbia are named Goran?"*
-- ⚠️ Coverage cliff: the census publication lists only the **top 10** names per
-  municipality per cohort per gender. That is roughly **200–400 distinct names
-  total**, out of the tens of thousands actually in use. A name like `Vanja` will
-  very likely return **nothing**.
-
-**This drives the product positioning.** Do not present the app as "how many of us
-are there". Present it as a **map of naming fashions across place and generation**.
-Then an empty result is a correct, informative answer rather than a bug — see
-§6.3 for the required empty state.
-
-### 2.1 Open question that blocks Phase 1
-
-The annual newborn XLSX files (§3.2) may or may not contain absolute counts. They
-could not be inspected during research (binary download). **First task: open
-`najcescaimenadece2023.xlsx` and record the exact column layout in
-`docs/DATA_NOTES.md`.**
-
-- If they contain **counts** → build the newborn layer as a true count-based tool
-  (a real Slovenian equivalent for the 2021–2025 birth years), and treat the census
-  layer as historical depth.
-- If they contain **ranks only** → the whole app is a rank explorer; proceed as
-  described below and file the RZS request in §3.5.
+The site should be enjoyable to browse. That shapes tone and entry points (§8),
+never the evidence rules (§4).
 
 ---
 
-## 3. Data sources — verified links
+## 2. Data reality
 
-All links below were resolved successfully during research on 2026-08-31.
+**There is no Serbian dataset with absolute counts per first name.** Checked
+against the RZS census publication, the RZS open data portal
+(`opendata.stat.gov.rs/odata` — 731 datasets, no names dataset found), the
+national open data portal, and GitHub. Absence of a search hit is not proof, but
+nothing surfaced.
 
-### 3.1 Primary: census publication (historical depth, 1940–2022)
+Consequences:
 
-**"Najčešća imena i prezimena", RZS, Census 2022, published 2024-03-08**
+- ✅ Answerable: *where did `Goran` rank in Šabac among people born 1971–1980?*
+- ❌ Not answerable: *how many people in Serbia are named `Goran`?*
+- ⚠️ **Coverage cliff:** the census publishes only the **top 10** per municipality,
+  per cohort, per gender — roughly 200–400 distinct names out of tens of
+  thousands in use. `Vanja` will very likely return nothing. §8.1 handles this.
 
-- Landing page: <https://www.stat.gov.rs/sr-Latn/vesti/20240308-najcescaimenaiprezimena>
-- **PDF (the actual data):** <https://publikacije.stat.gov.rs/G2024/Pdf/G20244001.pdf>
+The exception is the annual newborn XLSX files, which may contain counts. That is
+`BRANCH A`, resolved in Phase 0.
 
-Contents:
+---
+
+## 3. Sources
+
+All links verified 2026-08-31.
+
+### 3.1 Census publication — historical depth, 1940–2022
+
+**"Najčešća imena i prezimena", RZS, Census 2022**
+
+- Landing: <https://www.stat.gov.rs/sr-Latn/vesti/20240308-najcescaimenaiprezimena>
+- **PDF:** <https://publikacije.stat.gov.rs/G2024/Pdf/G20244001.pdf>
 
 | Table | Content | Granularity | Counts? |
 |-------|---------|-------------|---------|
-| 1 | Ten most frequent **female** first names | Republic → region → district → municipality × 11 birth cohorts | No — rank only |
-| 2 | Ten most frequent **male** first names | Same as Table 1 | No — rank only |
-| 3 | Most frequent female and male names | Republic, by **single birth year** (approx. 1940–2022) | No — rank only |
-| 4 | Ten most frequent **surnames** | Republic | **Yes**, approximate (Jovanović ~130,000; Petrović ~100,000; Nikolić ~90,000) |
-| 5 | Most frequent **name + surname combinations** | Republic, by gender | **Yes**, approximate (Dragan Jovanović >2,200; Jelena Jovanović ~1,900) |
+| T1 | Ten most frequent **female** names | Republic → region → district → municipality × 9 cohorts | No |
+| T2 | Ten most frequent **male** names | Same | No |
+| T3 | Most frequent female and male names | **Republic only**, by single birth year (~1940–2022) | No |
+| T4 | Ten most frequent surnames | Republic → region → district → municipality (same nesting as T1/T2) | No |
+| T5 | Most frequent name + surname combinations | Republic, by gender, **top 20** | No |
 
-Birth cohorts in Tables 1–2: `1940 and earlier`, then by decade
-(`1941–1950` … `2001–2010`), then `2011–2022`. **Confirm the exact cohort labels
-from the PDF — do not hardcode from this document.**
+**Phase 0 finding (2026-08-31), see `docs/DATA_NOTES.md`:** T1–T2 have **9**
+cohorts, not 11 (`1940. и раније` + 7 decade buckets + `2011–2022`). T4's
+granularity and T4/T5's "counts" column above are corrected from the original
+draft of this document — T4 goes to municipality level like T1/T2, and neither
+T4 nor T5 carries any count or approximation in the actual PDF (`G20244001.pdf`);
+the approximate figures below came from the RZS press-release landing page, a
+different document. Cohorts in T1–T2: `1940. и раније`, then decades
+(`1941–1950` … `2001–2010`), then `2011–2022`. **Read the exact labels from the
+PDF — do not hardcode from this document.**
 
-Known facts usable as parser test fixtures (from the official landing page):
+Known facts, from the official landing page. **These are the parser test
+fixtures** — if output contradicts them, the parser is wrong:
 
-- Most frequent female name by birth year: `Radmila` until 1943 → `Slobodanka`
-  (1944–1945) → `Mirjana` (1946–1948) → `Ljiljana` (1949–1959) → `Snežana`
-  (1960–1963, 1969–1970) → `Vesna` (1964–1968) → `Biljana` (1971–1973) →
-  `Danijela` (1974–1975) → `Jelena` (1976–1994) → `Milica` (1995–2011) → `Lena`
-  (2012) → `Dunja` (2013–2015) → `Sofija` (2016–2022).
-- Republic-level top 10 female: Jelena, Milica, Marija, Dragana, Mirjana,
-  Ljiljana, Snežana, Ivana, Gordana, Ana.
-- Republic-level top 10 male: Dragan, Aleksandar, Milan, Nikola, Zoran, Marko,
-  Miloš, Goran, Dejan, Dušan.
+- Most frequent female name by birth year: `Radmila` to 1943 → `Slobodanka`
+  (1944–45) → `Mirjana` (1946–48) → `Ljiljana` (1949–59) → `Snežana` (1960–63,
+  1969–70) → `Vesna` (1964–68) → `Biljana` (1971–73) → `Danijela` (1974–75) →
+  `Jelena` (1976–94) → `Milica` (1995–2011) → `Lena` (2012) → `Dunja` (2013–15) →
+  `Sofija` (2016–22).
+- Republic top 10 female: Jelena, Milica, Marija, Dragana, Mirjana, Ljiljana,
+  Snežana, Ivana, Gordana, Ana.
+- Republic top 10 male: Dragan, Aleksandar, Milan, Nikola, Zoran, Marko, Miloš,
+  Goran, Dejan, Dušan.
 - Cohort 2011–2022 female: Dunja, Sofija, Milica, Sara, Nikolina, Lena, Teodora,
   Anđela, Maša, Nađa.
 - Cohort 2011–2022 male: Luka, Lazar, Stefan, Nikola, Aleksa, Vuk, Filip,
   Mihajlo, Pavle, Vasilije.
 - Top surnames: Jovanović, Petrović, Nikolić, Marković, Đorđević, Stojanović,
   Ilić, Stanković, Pavlović, Milošević.
+- Approximate surname counts: Jovanović ~130,000; Petrović ~100,000;
+  Nikolić ~90,000. Combinations: Dragan Jovanović >2,200; Jelena Jovanović ~1,900.
 
-**Use these as assertions in the parser test suite.** If the parser output
-contradicts any of them, the parser is wrong.
+### 3.2 Annual newborn names — currency, 2021–2025
 
-### 3.2 Secondary: annual newborn names (currency, 2021–2025)
-
-Index page: <https://www.stat.gov.rs/sr-latn/oblasti/stanovnistvo/eksel-tabele/>
-
-Direct XLSX links (note the mixed and inconsistent filename conventions — some
-contain Cyrillic-derived characters; URL-encode carefully):
+Index: <https://www.stat.gov.rs/sr-latn/oblasti/stanovnistvo/eksel-tabele/>
 
 - 2025: `https://www.stat.gov.rs/media/419659/najčešća-imena-dece-rođene-u-republici-srbiji-u-2025-godini-godini.xlsx`
 - 2024: `https://www.stat.gov.rs/media/405440/najcesca-imena-dece-rodjene-u-2024-godini.xlsx`
@@ -154,121 +114,307 @@ contain Cyrillic-derived characters; URL-encode carefully):
 - 2022: `https://www.stat.gov.rs/media/358665/najcesca-imena-dece-rodjene-u-2022-godini.xlsx`
 - 2021: `https://www.stat.gov.rs/media/358213/najcesca-imеna-dece-rodjene-u-2021-godini.xlsx`
 
-> ⚠️ The 2021 filename contains a **Cyrillic `е` (U+0435)** in `imеna` — it is not
-> the Latin `e`. Copy the URL literally; do not retype it.
+> ⚠️ The 2021 filename contains a **Cyrillic `е` (U+0435)** in `imеna`, not the
+> Latin `e`. Copy the URL literally; never retype it.
 
-These are machine-readable and updated annually, unlike the decennial census.
-**This is the better long-term backbone if the files contain counts.**
+Machine-readable and updated annually. If `BRANCH A` resolves to counts, this
+becomes the stronger long-term backbone.
 
-### 3.3 Reference/geography data
+### 3.3 Geography
 
-Needed to join municipalities and draw the map.
-
-- RZS spatial units register and GIS:
+- RZS spatial units register:
   <https://www.stat.gov.rs/sr-latn/oblasti/registar-prostornih-jedinica-i-gis/>
-- Open data code lists (`Šifarnik` category) at
-  <http://opendata.stat.gov.rs/odata/> — includes `Општине и градови`
-  (municipalities and cities), `Насеља` (settlements), `Територија - НСТЈ`
-  (NUTS territory). Download as CSV or JSON.
-- Municipality boundary polygons for the SVG map are **not** on the RZS portal in
-  a usable form. Use OpenStreetMap-derived boundaries or a public GeoJSON of
-  Serbian municipalities; record whatever source is chosen in `docs/DATA_NOTES.md`
-  with its licence.
+- Code lists (`Šifarnik`) at <http://opendata.stat.gov.rs/odata/> — municipalities
+  and cities, settlements, NUTS territory. CSV/JSON.
+- Municipality boundary polygons are **not** available from RZS in usable form.
+  Use an OpenStreetMap-derived GeoJSON; record source and licence in
+  `docs/DATA_NOTES.md`.
 
-### 3.4 Census 2011 (optional comparison layer)
+### 3.4 Request to RZS — send during Phase 0
 
-RZS published an equivalent names publication after the 2011 census. Only rank
-lists — same limitation. Useful only if we want a 2011-vs-2022 comparison feature.
-Deprioritise.
+Ask for **first-name frequencies by gender and single year of birth, at Republic
+level**, with whatever suppression floor RZS requires. Cite four national
+statistical offices that already publish such aggregates:
 
-- Census 2011 Excel tables:
-  <https://www.stat.gov.rs/sr-latn/oblasti/popis/popis-2011/popisni-podaci-eksel-tabele/>
+| Office | What they publish | Floor |
+|--------|-------------------|-------|
+| **SURS** (SI) | Counts per name, by statistical region and birth period, annual | <5 |
+| **DZS** (HR) | Counts per name, surname, and combination | <10 |
+| **Statbel** (BE) | First names of the **total population by municipality**, open data XLSX, CC BY 4.0 | <5 |
+| **ONS** (UK) | **Rank and count** by local authority, region, mother's age, month; 1996–2025 | published floor |
 
-### 3.5 The real unlock: request a custom tabulation from RZS
+What we are asking for is strictly less granular than what Statbel gives away.
 
-Frequencies of first names by gender and birth year at Republic level are an
-aggregate that does not breach statistical confidentiality — SURS and DZS both
-publish exactly this. Ask RZS for it. Three channels, in order of formality:
+Channels: `Pitajte nas`
+(<https://www.stat.gov.rs/sr-latn/korisnicka-podrska/pitajte-nas/>) → microdata
+request (<https://www.stat.gov.rs/sr-latn/korisnicka-podrska/micropodaci/>) → FOI
+request (<http://www.stat.gov.rs/sr-cyrl/korisnicka-podrska/informacije-od-javnog-znacaja/>).
+Contact: `stat@stat.gov.rs`. **Do not wait for a reply.**
 
-1. `Pitajte nas` (user support):
-   <https://www.stat.gov.rs/sr-latn/korisnicka-podrska/pitajte-nas/>
-2. Microdata request (formal, may involve a fee/contract):
-   <https://www.stat.gov.rs/sr-latn/korisnicka-podrska/micropodaci/>
-3. Freedom-of-information request under the *Zakon o slobodnom pristupu
-   informacijama od javnog značaja*:
-   <http://www.stat.gov.rs/sr-cyrl/korisnicka-podrska/informacije-od-javnog-znacaja/>
+### 3.5 Reference implementations
 
-Contact e-mail on the open data portal: `stat@stat.gov.rs`.
+- **SURS**: <https://www.stat.si/imenarojstva> — data as of 1 Jan 2026. Search by
+  name, surname, combination, birthday; region and birth-period breakdowns;
+  autocomplete; two-name comparison; curated sections (most frequent, newborns,
+  disappearing, modern). <5 suppressed; regional cells protected by the
+  missing-values method.
+- **DZS**: <https://web.dzs.hr/app/imena/default.aspx> — simpler; <10 suppressed.
+- **Statbel**: <https://statbel.fgov.be/en/open-data/first-names-total-population-municipality>
+- **ONS**: <https://www.ons.gov.uk/releases/babynamesinenglandandwales2025>
+- **CSO Ireland**: <https://www.cso.ie/en/releasesandpublications/ep/p-ibn/irishbabiesnames2025/mainresults>
+  — top risers, new top-100 entrants, county breakdown, interactive explorer.
+- **CSO on variant spellings**: <https://www.cso.ie/en/releasesandpublications/ep/p-ibn/irishbabiesnames2024/mainresults/>
+  — since 2018 `Sean` and `Seán` are two separate names, causing a documented
+  break in series: `Seán` ranks 15th, `Sean` fell to 123rd. This is the precedent
+  behind `BRANCH B`.
 
-**Send this in parallel with Phase 1.** If it lands, the schema below already has
-a `count` column ready to populate.
+**Not verified — do not cite as precedent:** SSA publication depth beyond top
+1000; the commercial site Namedaisy.
 
-### 3.6 Licensing
+### 3.6 Licence
 
-RZS open data terms allow copying, redistribution, modification and **commercial
-use**, with mandatory attribution: source institution, retrieval date, and a clear
-note of any modification. Put this in the site footer:
+RZS open data terms permit copying, redistribution, modification and commercial
+use, with attribution, retrieval date, and a clear note of any modification.
+Footer on every page:
 
 ```
 Izvor: Republički zavod za statistiku (Popis 2022; vitalna statistika 2021–2025).
-Preuzeto: <YYYY-MM-DD>. Obrada: <projekat>.
+Preuzeto: <YYYY-MM-DD>. Obrada: <SITE_NAME>.
 ```
 
-For the Slovenian and Croatian references, if anything from them is ever cited:
-SURS requires the credit `Vir: SURS`.
+If Slovenian data is ever cited: `Vir: SURS`.
 
 ---
 
-## 4. Database schema (PostgreSQL)
+## 4. Evidence model
 
-Design principle: `count` columns exist and are **nullable**. Rank-only sources
-leave them `NULL`. If RZS ever supplies counts, no migration is needed.
+Every value the API returns and the UI renders carries its evidence class. This is
+a **data model requirement**, not documentation.
+
+### 4.1 Three classes
+
+| Class | Meaning | Example |
+|-------|---------|---------|
+| **observed** | Read directly from a source table | `Goran is #3 in Šabac, 1971–1980` |
+| **derived** | Computed only from observed ranks, using set and comparison operations | `Goran appears in the top 10 in 83 municipalities` |
+| **unknown** | The source cannot answer it | `How many people are named Goran` |
+
+### 4.2 Evidence class vs data status
+
+Keep these separate. `evidence` describes **what we can know**; `status` describes
+**what happened in the source**.
+
+```json
+{
+  "value": null,
+  "evidence": "unknown",
+  "status": "not_observed",
+  "reason": "source_is_top10_only"
+}
+```
+
+`status` vocabulary: `observed` · `not_observed` · `suppressed` · `not_applicable`.
+`reason` vocabulary: `source_is_top10_only` · `scope_not_published` ·
+`source_has_no_counts` · `below_confidentiality_threshold`.
+
+### 4.3 API envelope
+
+Never return a bare scalar.
+
+```json
+{
+  "rank": 3,
+  "evidence": "observed",
+  "status": "observed",
+  "source": "census_2022_t2",
+  "scope": { "municipality": "Šabac", "cohort": "1971-1980", "gender": "M" }
+}
+```
+
+```json
+{
+  "municipality_count": 83,
+  "evidence": "derived",
+  "status": "observed",
+  "derived_from": ["census_2022_t1", "census_2022_t2"],
+  "note": "top10_presence_only"
+}
+```
+
+### 4.4 `null` is not "rare"
+
+`null` means the source cannot see it. The frontend must have **no code path**
+that converts an unknown into a characterisation of a name.
+
+Required test: assert that no rendered string containing `retk`, `čest`,
+`popular`, `koncentr` or a `%` sign can be produced from any payload whose
+`evidence` is `unknown`.
+
+---
+
+## 5. Hard rules
+
+### 5.1 Truncation at rank 10 is censoring, not display
+
+For any (municipality, cohort, gender) cell, everything outside the top 10 is one
+undifferentiated state. A name at #11 in every municipality and a name held by
+nobody produce **identical observations**. No metric may require distinguishing
+them.
+
+Does not ship until counts exist:
+
+- ❌ Any concentration or regionality score
+- ❌ Any percentage, share, or `−92%` trend
+- ❌ `rare` / `common` / `high concentration` as characterisations
+- ❌ Algorithmic "similar names" or "closest rival" — the candidate pool is ~200
+  observable names; the result would be an artefact of the window
+
+**User-chosen comparison is fine.** `Goran vs Zoran` because the user asked is a
+valid rank comparison. The machine choosing the rival is not.
+
+### 5.2 Rank depth limits what "rising" can mean
+
+Ireland's CSO can say `Raya rose from 213rd to 99th` because they publish ranks
+hundreds deep. **We have ranks 1–10.** A name entering our top 10 may have come
+from #11 or from #4,000.
+
+| Render as | Never render as |
+|-----------|-----------------|
+| `Ušlo u top 10` | `Ime u usponu` |
+| `Ispalo iz top 10` | `Ime u nestajanju` |
+| `Ponovo u top 10` | `Ime se vratilo` |
+| `Viši rang nego prethodne generacije` | `Skočilo N mesta` |
+
+Each carries a tooltip: *"Podaci pokazuju samo prvih 10 imena, pa ne možemo znati
+koliko je ime bilo rasprostranjeno dok nije bilo u top 10."*
+
+### 5.3 National rank often does not exist
+
+Available only for names inside the national top 10. For every other name, the
+national side of a local-vs-national comparison is `unknown`.
+
+- ✅ `#1 u Šapcu — nije u nacionalnom top 10 za ovu generaciju`
+- ❌ `#1 lokalno, #17 nacionalno`
+
+### 5.4 Cohorts are not equal-length
+
+Buckets are open-ended (`1940 and earlier`), 10-year, and 12-year (`2011–2022`).
+Counting them as steps treats unequal intervals as equal units. Express
+persistence as a year span, computed from `cohort.year_from` / `year_to`:
+
+- ✅ `U top 10 kod rođenih 1941–1990.`
+- ❌ `U top 10 sedam uzastopnih generacija.`
+
+### 5.5 Set overlap is a count, never a bar
+
+"6 of 10 names shared between two cohorts" is legitimate. A progress bar makes it
+read as a similarity percentage, which it is not — two cohorts can share 6 of 10
+top names while being entirely different below rank 10. Number and sentence only.
+No bar, no gauge, no ring.
+
+### 5.6 Rank charts use an inverted axis, never bar length
+
+Bar length encodes magnitude. We have none. Comparison views plot rank positions
+on a shared axis, 1 at top.
+
+### 5.7 Terminology
+
+The absence of a name from a cell is `not_in_top10`, never `absent`. This applies
+to API fields, CSS classes, and map legend copy. `absent` invites the reading
+"nobody has this name."
+
+---
+
+## 6. Data model
+
+### 6.1 Name identity — the core decision
+
+**The statistical unit is the form the source printed.** Not our normalisation,
+not our display choice.
 
 ```sql
--- ---------- geography ----------
-CREATE TABLE region (            -- NUTS 2
-    id          SERIAL PRIMARY KEY,
-    code        TEXT UNIQUE NOT NULL,
-    name        TEXT NOT NULL
+CREATE TABLE given_name (
+    id           SERIAL PRIMARY KEY,
+    source_form  TEXT NOT NULL,     -- verbatim as printed: 'LJiljana', 'Đorđe'
+    source_key   TEXT NOT NULL REFERENCES data_source(key),
+    search_key   TEXT NOT NULL,     -- ASCII-folded, digraph-normalised — NOT unique
+    gender       CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
+    UNIQUE (source_form, source_key, gender)
+);
+CREATE INDEX ON given_name (search_key);
+```
+
+`source_key` identifies the **specific table or edition**, not the dataset family:
+`census_2022_t1`, `census_2022_t2`, `census_2022_t3`, `census_2022_t4`,
+`census_2022_t5`, `newborn_2021` … `newborn_2025`. This is what makes every row
+auditable back to a page.
+
+`search_key` is deliberately **not unique**. Two source forms may fold to the same
+key. That is a finding to surface (§7.2), not a collision to resolve.
+
+### 6.2 Clusters — display and search only
+
+```sql
+CREATE TABLE name_cluster (
+    id         SERIAL PRIMARY KEY,
+    canonical  TEXT NOT NULL,       -- the display form we choose
+    gender     CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
+    UNIQUE (canonical, gender)
 );
 
-CREATE TABLE district (          -- oblast, NUTS 3
-    id          SERIAL PRIMARY KEY,
-    code        TEXT UNIQUE NOT NULL,
-    name        TEXT NOT NULL,
-    region_id   INT REFERENCES region(id)
+CREATE TABLE name_cluster_member (
+    cluster_id     INT NOT NULL REFERENCES name_cluster(id),
+    given_name_id  INT NOT NULL REFERENCES given_name(id),
+    decided_by     TEXT NOT NULL CHECK (decided_by IN
+                       ('exact_match','digraph_normalization','manual')),
+    decision_note  TEXT,            -- required when decided_by = 'manual'
+    decided_at     DATE NOT NULL,
+    PRIMARY KEY (cluster_id, given_name_id)
+);
+```
+
+**A cluster is a unit of search and display. It is never a unit of computation.**
+
+Every statistic resolves its `given_name` members first and reports per member.
+Two members are **never summed** merely because they share a cluster — summing
+would assert that the source treats them as one name, which is exactly what we do
+not know until `BRANCH B` is resolved.
+
+`decision_note` is mandatory for manual decisions. The audit question the schema
+must answer: *who or what decided these two forms are the same for display, and on
+what basis?*
+
+### 6.3 Geography
+
+```sql
+CREATE TABLE region (
+    id    SERIAL PRIMARY KEY,
+    code  TEXT UNIQUE NOT NULL,
+    name  TEXT NOT NULL
+);
+
+CREATE TABLE district (
+    id         SERIAL PRIMARY KEY,
+    code       TEXT UNIQUE NOT NULL,
+    name       TEXT NOT NULL,
+    region_id  INT REFERENCES region(id)
 );
 
 CREATE TABLE municipality (
-    id          SERIAL PRIMARY KEY,
-    code_rzs    TEXT UNIQUE NOT NULL,   -- official RZS municipality code
-    name        TEXT NOT NULL,
-    name_slug   TEXT NOT NULL,          -- ASCII, lowercase, for URLs
-    district_id INT REFERENCES district(id),
-    lat         DOUBLE PRECISION,
-    lon         DOUBLE PRECISION
+    id           SERIAL PRIMARY KEY,
+    code_rzs     TEXT UNIQUE NOT NULL,   -- join on this, never on name
+    name         TEXT NOT NULL,
+    name_slug    TEXT NOT NULL,
+    district_id  INT REFERENCES district(id),
+    lat          DOUBLE PRECISION,
+    lon          DOUBLE PRECISION
 );
 CREATE INDEX ON municipality (name_slug);
+```
 
--- ---------- names ----------
-CREATE TABLE given_name (
-    id          SERIAL PRIMARY KEY,
-    name        TEXT NOT NULL,          -- canonical Latin script, e.g. 'Ljiljana'
-    name_cyr    TEXT,                   -- Cyrillic form if known
-    name_norm   TEXT NOT NULL,          -- ASCII-folded lowercase, e.g. 'ljiljana'
-    gender      CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
-    UNIQUE (name_norm, gender)
-);
-CREATE INDEX ON given_name (name_norm);
+### 6.4 Cohorts
 
-CREATE TABLE surname (
-    id            SERIAL PRIMARY KEY,
-    surname       TEXT UNIQUE NOT NULL,
-    surname_norm  TEXT NOT NULL,
-    approx_count  INT                   -- from census Table 4, nullable
-);
-
--- ---------- birth cohorts ----------
+```sql
 CREATE TABLE cohort (
     id          SERIAL PRIMARY KEY,
     label       TEXT UNIQUE NOT NULL,   -- exactly as printed in the PDF
@@ -276,199 +422,461 @@ CREATE TABLE cohort (
     year_to     INT,
     sort_order  INT NOT NULL
 );
+```
 
--- ---------- census rank layer (Tables 1-2) ----------
+### 6.5 Observations
+
+`count` columns exist and are nullable throughout. Rank-only sources leave them
+`NULL`. If `BRANCH A` or the RZS request delivers counts, no migration is needed.
+
+Uniqueness is on **the name within its scope**, never on the rank number — this
+stores tied ranks natively (§9.3).
+
+```sql
 CREATE TABLE census_rank (
-    id              BIGSERIAL PRIMARY KEY,
-    given_name_id   INT NOT NULL REFERENCES given_name(id),
-    municipality_id INT NOT NULL REFERENCES municipality(id),
-    cohort_id       INT NOT NULL REFERENCES cohort(id),
-    gender          CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
-    rank            SMALLINT NOT NULL CHECK (rank BETWEEN 1 AND 10),
-    count           INT,                -- always NULL from this source
-    UNIQUE (municipality_id, cohort_id, gender, rank)
+    id               BIGSERIAL PRIMARY KEY,
+    given_name_id    INT NOT NULL REFERENCES given_name(id),
+    municipality_id  INT NOT NULL REFERENCES municipality(id),
+    cohort_id        INT NOT NULL REFERENCES cohort(id),
+    gender           CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
+    rank             SMALLINT NOT NULL CHECK (rank BETWEEN 1 AND 10),
+    count            INT,
+    UNIQUE (municipality_id, cohort_id, gender, given_name_id)
 );
 CREATE INDEX ON census_rank (given_name_id);
 CREATE INDEX ON census_rank (municipality_id, cohort_id);
 
--- ---------- census rank by single birth year, Republic level (Table 3) ----------
 CREATE TABLE census_rank_by_year (
-    id              BIGSERIAL PRIMARY KEY,
-    given_name_id   INT NOT NULL REFERENCES given_name(id),
-    birth_year      SMALLINT NOT NULL,
-    gender          CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
-    rank            SMALLINT NOT NULL,
-    count           INT,
-    UNIQUE (birth_year, gender, rank)
+    id             BIGSERIAL PRIMARY KEY,
+    given_name_id  INT NOT NULL REFERENCES given_name(id),
+    birth_year     SMALLINT NOT NULL,
+    gender         CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
+    rank           SMALLINT NOT NULL,
+    count          INT,
+    UNIQUE (birth_year, gender, given_name_id)
 );
 CREATE INDEX ON census_rank_by_year (given_name_id);
 
--- ---------- name + surname combinations (Table 5) ----------
-CREATE TABLE name_surname_combo (
-    id              BIGSERIAL PRIMARY KEY,
-    given_name_id   INT NOT NULL REFERENCES given_name(id),
-    surname_id      INT NOT NULL REFERENCES surname(id),
-    gender          CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
-    rank            SMALLINT,
-    approx_count    INT,
-    UNIQUE (given_name_id, surname_id)
-);
-
--- ---------- newborn layer (annual XLSX) ----------
 CREATE TABLE newborn_name (
-    id              BIGSERIAL PRIMARY KEY,
-    given_name_id   INT NOT NULL REFERENCES given_name(id),
-    year            SMALLINT NOT NULL,
-    gender          CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
-    rank            SMALLINT,
-    count           INT,                -- populate if the XLSX has counts
+    id             BIGSERIAL PRIMARY KEY,
+    given_name_id  INT NOT NULL REFERENCES given_name(id),
+    year           SMALLINT NOT NULL,
+    gender         CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
+    rank           SMALLINT,
+    count          INT,                 -- BRANCH A
     UNIQUE (year, gender, given_name_id)
 );
 CREATE INDEX ON newborn_name (given_name_id);
 
--- ---------- provenance ----------
-CREATE TABLE data_source (
-    id              SERIAL PRIMARY KEY,
-    key             TEXT UNIQUE NOT NULL,   -- 'census2022_pdf', 'newborn_2023_xlsx'
-    title           TEXT NOT NULL,
-    url             TEXT NOT NULL,
-    retrieved_at    DATE NOT NULL,
-    notes           TEXT
+CREATE TABLE surname (
+    id            SERIAL PRIMARY KEY,
+    surname       TEXT NOT NULL,
+    source_key    TEXT NOT NULL REFERENCES data_source(key),
+    search_key    TEXT NOT NULL,
+    approx_count  INT,
+    UNIQUE (surname, source_key)
+);
+
+CREATE TABLE name_surname_combo (
+    id             BIGSERIAL PRIMARY KEY,
+    given_name_id  INT NOT NULL REFERENCES given_name(id),
+    surname_id     INT NOT NULL REFERENCES surname(id),
+    gender         CHAR(1) NOT NULL CHECK (gender IN ('M','F')),
+    rank           SMALLINT,
+    approx_count   INT,
+    UNIQUE (given_name_id, surname_id)
 );
 ```
 
-**Volume estimate:** ~170 municipalities × 11 cohorts × 2 genders × 10 ranks ≈
-**37,400 rows** in `census_rank`; ~1,700 in `census_rank_by_year`; a few hundred
-in the newborn layer. Trivial for PostgreSQL — no partitioning, no caching layer
-needed.
+### 6.6 Provenance
+
+```sql
+CREATE TABLE data_source (
+    key           TEXT PRIMARY KEY,     -- 'census_2022_t1', 'newborn_2023'
+    title         TEXT NOT NULL,
+    url           TEXT NOT NULL,
+    table_ref     TEXT,                 -- 'Tabela 1', 'Sheet1'
+    scope         TEXT NOT NULL,        -- 'municipality x cohort', 'republic x year'
+    measure       TEXT NOT NULL,        -- 'rank' | 'count' | 'rank+count'
+    retrieved_at  DATE NOT NULL,
+    notes         TEXT
+);
+```
+
+**No automatic merging across sources. There is no "latest wins".** If the census
+and a newborn file disagree, they are answering different questions at different
+scopes with different measures. The API routes each question to the source whose
+`scope` and `measure` fit it, and names that source in the response. Merging
+different statistical definitions is never done implicitly.
+
+### 6.7 Volume
+
+~170 municipalities × 11 cohorts × 2 genders × 10 ranks ≈ **37,400** rows in
+`census_rank`; ~1,700 in `census_rank_by_year`; a few hundred in the newborn
+layer. Trivial. No partitioning, no cache layer, no search engine.
 
 ---
 
-## 5. Ingestion
+## 7. Features
 
-### 5.1 Newborn XLSX (Phase 1 — do this first)
+All eight ship. Each is tagged with the source it needs — this drives the build
+order in §10.
 
-Straightforward: `openpyxl` or `pandas.read_excel`. One loader per year, output to
-`data/normalized/newborn_<year>.csv`.
+| # | Feature | Source | Evidence |
+|---|---------|--------|----------|
+| 1 | **Search a name** — everything the sources can prove about it | T1–T3, XLSX | observed + derived |
+| 2 | **Generation Explorer** — birth year → top 10 M/F | **T3 only** | observed |
+| 3 | **Name timeline** — rank across cohorts and years | T1–T3 | observed |
+| 4 | **Map** — top-10 presence by municipality | T1–T2 | observed + derived |
+| 5 | **Compare** — name A vs name B, user-chosen | T1–T3 | observed |
+| 6 | **Municipality** — top 10 by cohort, and how it differs from national | T1–T2 | observed + derived |
+| 7 | **Newborns** — 2021–2025 | XLSX | observed |
+| 8 | **Šta ovaj sajt ne može da vam kaže** | — | — |
 
-CSV convention for all intermediate files in this project:
-**separator `;`, UTF-8 with BOM, dates `DD.MM.YYYY`, decimal comma.**
+Feature 1 is worded *"everything the sources can prove"*, not "everything known" —
+the census layer carries ranks, the newborn layer may carry counts, and the page
+must not promise a uniform answer.
 
-### 5.2 Census PDF (Phase 2 — the hard part, ~60% of total effort)
+### 7.1 Name page — required content order
 
-Use `pdfplumber` with explicit per-column bounding boxes. Do **not** trust
-automatic table detection.
+1. **Kada** — cohorts in which it reached the top 10, with rank; inverted-axis timeline
+2. **Gde** — municipality count, highest rank achieved and where; map
+3. **Najbolji rezultat** — highest rank, where and when
+4. **Raspon** — first and last cohort in which it appears at all
 
-Known hazards, all of which must be handled explicitly:
+All four are `observed` or `derived`. No scores, no percentages, no adjectives.
 
-1. **Split tables across facing pages.** Ranks I–V appear on the left page and
-   VI–X on the right, with the municipality label repeated on both. Rows must be
-   stitched by (municipality, cohort) key, not by page order.
-2. **Cyrillic → Latin digraph corruption.** The published Latin transliteration
-   renders `Љиљана` as `LJiljana` (both letters of the digraph capitalised). The
-   same will affect `NJ` and `DŽ`. Normalise: `LJ`→`Lj`, `NJ`→`Nj`, `DŽ`→`Dž`
-   when not at a word boundary requiring full caps. Build a mapping table and
-   test it against `Ljiljana`, `Njegoš`, `Đorđe`, `Anđela`, `Snežana`.
-3. **Diacritics.** `š č ć ž đ` must survive extraction. If they arrive as mojibake,
-   the font encoding is non-standard — fall back to per-glyph mapping rather than
-   guessing.
-4. **Municipality name ambiguity.** Several municipalities share names with
-   districts (e.g. Šabac, Niš). Join on the RZS code, never on the name string.
-5. **Belgrade.** Belgrade's city municipalities may appear separately, as a
-   combined row, or both. Decide once and document it.
+### 7.2 Split-name state (required)
 
-**Never let the parser fill gaps.** A missing cell is `NULL`, never a guess.
+Because `search_key` is not unique (§6.1), a search may resolve to more than one
+`given_name`. The UI must handle this explicitly:
 
-### 5.3 Validation invariants
+> Izvor vodi dva odvojena zapisa za ovo ime: **Đorđe** i **Djordje**.
+> Prikazujemo ih odvojeno jer ih statistika ne spaja.
 
-The loader must refuse to commit if any of these fail:
+Timelines and maps render **per member**, never summed (§6.2). This is not an edge
+case to defer — it is the visible consequence of the project's central
+methodological commitment, and it ships in Phase 1.
 
-- Every municipality has exactly 11 cohorts.
-- Every (municipality, cohort, gender) has exactly 10 ranks, 1..10, no duplicates.
-- Every name in `census_rank` resolves to a `given_name` row.
-- Municipality count matches the official RZS municipality register count.
-- The known-facts list in §3.1 reproduces exactly.
+### 7.3 Generation Explorer
+
+An entry point equal in prominence to name search, not a sub-page. Birth year →
+top 10 male and female names for that year, nationally. Two follow-ons, both pure
+T3 lookups:
+
+- **Compare two generations** (`1988 vs 2008`) — names that left the top 10, names
+  that entered, names present in both.
+- **"Kako bi te zvali da si rođen ranije"** — the #1 name of that year across
+  several decades.
+
+### 7.4 Municipality page
+
+Top 10 by cohort, plus a second column with the same name's national rank for the
+same cohort — showing `nije u nacionalnom top 10` wherever §5.3 applies. That
+column is where local character shows.
+
+### 7.5 Top-10 persistence
+
+`Najduži period u top 10: rođeni 1941–1990` — a year span per §5.4.
+
+### 7.6 Two time machines
+
+They read different tables and cannot be merged:
+
+- **National** — slider over single birth years, T3, **no map** (T3 has no geography)
+- **Geographic** — 11-step control over cohorts, T1–T2, **with map** (T1–T2 have
+  no per-year resolution)
+
+Never label the geographic control with years.
 
 ---
 
-## 6. Application
+## 8. UX and tone
 
-### 6.1 API (FastAPI)
+Three entry points on the home page, equal weight:
+`Kako se zoveš?` (name) · `Rođen/a sam...` (year) · `Izaberi opštinu` (map).
+One oversized search box hides two thirds of the product.
 
-```
-GET  /api/name/{name}?gender=M|F
-     → per-municipality best rank, per-cohort rank timeline, national rank by year
+### 8.1 Empty state
 
-GET  /api/municipality/{slug}
-     → top 10 by cohort and gender for that municipality
-
-GET  /api/cohort/{cohort_id}
-     → national top 10 for that cohort, plus which municipalities deviate
-
-GET  /api/compare?a=Goran&b=Zoran&gender=M
-     → side-by-side (mirrors the Slovenian app's compare feature)
-
-GET  /api/newborn/{year}?gender=M|F
-     → annual newborn ranking
-
-GET  /api/suggest?q=gor
-     → autocomplete over given_name.name_norm, prefix match, limit 10
-
-GET  /api/surname/{surname}
-     → approximate count if in top 10, else 404 with an explanatory payload
-```
-
-Every response includes a `source` block populated from `data_source`, so the
-frontend can render attribution per view.
-
-### 6.2 Frontend (vanilla JS)
-
-- Search box with autocomplete hitting `/api/suggest`.
-- Choropleth SVG map of Serbian municipalities, shaded by the name's best rank
-  (rank 1 darkest, rank 10 lightest, absent = neutral grey).
-- Cohort timeline: rank on the Y axis **inverted** (1 at top).
-- Comparison view for two names.
-- No build step. Plain ES modules, one CSS file.
-
-### 6.3 The empty state — required, not optional
-
-When a name has no rows, do **not** render an empty page or an error. Render:
+Not an error, not an apology — a finding plus a way onward:
 
 > **Vanja** nije bilo među 10 najčešćih imena ni u jednoj opštini ni u jednoj
-> generaciji. Zvanična statistika objavljuje samo prvih 10 imena po opštini, pa
-> ovaj alat ne može da potvrdi koliko ljudi nosi ovo ime — samo da nije bilo među
-> najčešćima.
+> generaciji.
+>
+> Zvanična statistika objavljuje samo prvih deset imena po opštini — sve ispod
+> desetog mesta je nevidljivo. Zato ne znamo koliko ljudi nosi ovo ime, samo da
+> nije bilo među najčešćima.
+>
+> *Evo šta jeste bilo najčešće u istom periodu →*
 
-…followed by the most frequent names in whatever municipality/cohort context the
-user was last looking at, so the page is never a dead end.
+Always offer the onward link. The page is never a dead end.
 
-A permanent **"Šta ovaj sajt ne može da vam kaže"** page explaining the rank-only
-limitation is part of the MVP, not a nice-to-have. It is what keeps the project
-honest.
+**We cannot distinguish "this name does not exist in Serbia" from "this name is
+not in the top 10."** Our name index *is* the set of observed names; we have no
+dictionary of Serbian names to check against. A real name and an invented string
+produce the same result, and that is correct. Never claim to know whether a name
+exists. Do not introduce an external name dictionary to fake the distinction — an
+unsourced list inside a statistics product damages the thing that makes it
+trustworthy.
+
+### 8.2 The limitations page
+
+Content, not boilerplate. Title it `Šta ovaj sajt ne može da vam kaže` and use it
+to explain *why* Serbian data looks this way, with the Slovenian, Croatian,
+Belgian and Irish comparisons from §3.4–3.5. Genuinely interesting reading, and it
+doubles as the public argument for why RZS should publish more.
+
+Part of the MVP. Not deferred.
+
+### 8.3 Source badge
+
+If `BRANCH A` yields counts, every page carries a visible badge:
+`Podatak: RANG` or `Podatak: BROJ ROĐENIH`. A user must never have to open the
+methodology page to know which they are looking at.
+
+Rank years and count years are **never plotted on one chart**. Placing `#3` above
+`843` invites the reading that they are the same measure.
 
 ---
 
-## 7. Phases
+## 9. Phase 0 — blocks everything — **COMPLETE, both branches resolved 2026-08-31**
 
-| Phase | Deliverable | Est. |
-|-------|-------------|------|
-| **0** | Open the 2023 XLSX, document its layout in `docs/DATA_NOTES.md`. Decide count-vs-rank. Send the RZS request from §3.5. | 1 h |
-| **1** | Newborn layer MVP: ingest 5 XLSX files, schema, 3 endpoints, minimal search UI. Runs locally on Windows. | 6–8 h |
-| **2** | Census PDF parser + validation harness + full historical load. | 12–15 h |
-| **3** | Map, cohort timeline, comparison view, empty state, limitations page. | 6–8 h |
-| **4** | Dockerise, deploy to VPS, nginx + TLS, attribution footer. | 2–3 h |
+All findings are recorded in `docs/DATA_NOTES.md`, which is now the source of
+truth for what the raw files actually contain. Two things this spec assumed
+turned out wrong and are corrected there — **read it before writing the T1/T2
+parser or the cohort seed data**:
 
-**Total: ~30 hours.** Phase 2 is the risk; everything else is routine.
+1. Table 1/2 have **9 cohort buckets, not 11** (`1940. и раније` + 7 decade
+   buckets `1941–1950`…`2001–2010` + `2011–2022`).
+2. Table 4 (surnames) is granular **to municipality level**, not Republic-only
+   as this section previously stated — same nesting as T1/T2.
+
+Also: the §11.2 "digraph corruption" hazard (`LJiljana`-style all-caps
+artifacts) **does not apply** — the census PDF is printed entirely in
+Cyrillic, not a Latin transliteration, so there is no such artifact to
+recover from. A Cyrillic→Latin transliteration step is still needed for
+`search_key`/display, but it's a clean script mapping, not error recovery.
+
+### 9.1 XLSX checklist (per year, 2021–2025) — done, all 5 years
+
+- [x] Sheet names and count — one sheet each; name drifts (`Коначно` /
+      `Коначно 2024` / `Коначно 2025`)
+- [x] Exact column headers, verbatim — no real headers; row 1 = title, row 2 =
+      `Девојчице`/`Дечаци`
+- [x] **Is there a count column, or rank only?** → **`BRANCH A` = rank only,
+      confirmed all 5 years, 0 numeric cells found anywhere**
+- [x] Maximum rank published — 10, every group, every year
+- [x] Gender layout — two columns side by side (B=girls, C=boys)
+- [x] Geography — district (`oblast`) level + Republic + macro-region + NUTS-2
+      rollups, **32 groups**, identical every year; no municipality level
+- [x] Tied ranks — none observed in any year
+- [x] Script — Cyrillic, 100%, all 5 years
+- [x] Diacritics/digraphs — N/A (Cyrillic has no Latin digraph problem)
+- [x] **Variant spellings** → **`BRANCH B` = listed separately**, confirmed:
+      `Михајло` (60+ occurrences) vs `Михаило` (2 occurrences) coexist as
+      distinct strings in the same year's data
+- [x] Layout consistency 2021→2025 — structurally identical (same 32 groups,
+      same 10-per-group pattern); only cosmetic differences (trailing empty
+      columns, sheet name)
+
+Also found: a 2021-only data-entry error (name+surname typed into one cell,
+`Пиротска област` rows 319–320) — see `docs/DATA_NOTES.md` §2.2 for how the
+loader should handle it (store verbatim, flag, never silently strip).
+
+### 9.2 Census PDF checklist — done, national tables + representative districts
+
+- [x] Exact cohort labels as printed — see correction above; full label list in
+      `docs/DATA_NOTES.md` §4
+- [x] Confirm ranks I–V / VI–X split across facing pages — confirmed, but the
+      cohort/year label **switches sides** between the two pages (leftmost
+      column on the left page, rightmost column on the right page) — not a
+      mirrored layout
+- [x] Confirm the digraph corruption (`LJiljana`) actually appears — **it does
+      not; the hazard doesn't apply to this source** (see above)
+- [x] Belgrade: city municipalities separately, aggregated, or both — **both**;
+      17 opštine appear individually and there's also one Republic-facing
+      aggregate row for `Београдска област (Град Београд)` — decide which
+      feeds `census_rank.municipality_id` before writing the parser
+- [x] **Municipality count** — not exactly counted yet; TOC (PDF pages 7–11)
+      lists every municipality by name and matches the region→oblast→opština
+      nesting; get the authoritative count from the RZS spatial register
+      (§3.3) when seeding `municipality`, not by hand-counting the TOC
+- [x] Tied ranks present? — none observed in T1, T2, T3, T4, or T5 samples
+
+Extra findings beyond the original checklist, also in `docs/DATA_NOTES.md`:
+Table 3 is confirmed Republic-only/single-birth-year as assumed; Table 5 is
+top-20 (not top 10) per gender; **Tables 4 and 5 carry no counts or
+approximations anywhere in the actual PDF** — the "Jovanović ~130,000"-style
+figures in §3.1 above came from the RZS press-release landing page, a
+different document, and do not appear in `G20244001.pdf` itself. Treat T4/T5
+as rank-only like T1–T3 unless a citable source for those approximate counts
+turns up.
+
+### 9.3 Tied ranks are a validation finding, not a schema branch
+
+The model in §6.5 already stores ties — uniqueness is on the name within scope,
+not on the rank number. Phase 0 only needs to **record** whether ties occur, so
+the validator knows whether to expect exactly 10 rows per cell or a variable
+count. No schema change either way.
+
+### 9.4 `BRANCH A` — counts in the newborn XLSX — **RESOLVED: rank only**
+
+Confirmed across all 5 years and, incidentally, across census T4/T5 as well
+(§9.2 above). No count-based layer exists anywhere in the currently available
+sources. `newborn_name.count`, `surname.approx_count`, and
+`name_surname_combo.approx_count` all stay `NULL` from these sources.
+`data_source.measure` is `rank` for every `data_source` key seeded from these
+files. The §3.4 RZS request remains the only path to real counts — send it in
+parallel with Phase 1, per the original plan.
+
+### 9.5 `BRANCH B` — variant spellings — **RESOLVED: source lists variants separately**
+
+Confirmed in the newborn XLSX (`Михајло` vs `Михаило`, §9.1 above; see
+`docs/DATA_NOTES.md` §5 for the full writeup). Each variant is its own
+`given_name` row. Clusters group them for search and display only, never for
+computation. The §7.2 split-name state is a **routine occurrence, not a rare
+edge case**, and ships in Phase 1 as originally planned. Do not auto-cluster by
+edit distance or phonetic similarity — `Јована` and `Јана` are both observed,
+distinct names, not variants of each other; clustering decisions for anything
+beyond exact transliteration mapping are `decided_by = 'manual'` with a
+`decision_note`.
+
+Either way, `decided_by` and `decision_note` record how the bridging was decided.
+Nothing about merging is implicit.
 
 ---
 
-## 8. Local development (Windows)
+## 10. Build order
+
+Five of eight features need only T3 and the XLSX files. Three need T1–T2, where
+all the parsing risk sits. Build by source, not by feature list.
+
+| Step | Work | Unlocks | Est. |
+|------|------|---------|------|
+| **0** | Phase 0 checklist + send the RZS request | — | 1–2 h |
+| **1** | Parse **T3** (~1,700 rows, one table shape) + load XLSX + schema | Features **2, 7, 8**, national parts of **3, 5**, and §7.2 | 8–10 h |
+| **2** | **Ship it.** A working public site exists from here on. | — | — |
+| **3** | Parse **T1–T2** with the validation harness | Features **1, 4, 6**, geographic parts of 3, 5 | 12–15 h |
+| **4** | Persistence, entry/exit lists, generation comparison, municipality-vs-national | §7.3–7.5 | 6–8 h |
+| **5** | Docker, VPS, TLS, attribution | — | 2–3 h |
+
+**Total ~35 h.**
+
+The point of this ordering: if T1–T2 parsing stalls, you have a live product
+instead of an empty repository. T3 is one table with one row shape — by far the
+cheaper parse, carrying the most shareable feature.
+
+Starting with the map because it is the most striking was rejected: it puts the
+whole project behind its own hardest component.
+
+---
+
+## 11. Ingestion
+
+### 11.1 XLSX
+
+`openpyxl` or `pandas.read_excel`. One loader per year →
+`data/normalized/newborn_<year>.csv`.
+
+Intermediate CSV convention throughout: **separator `;`, UTF-8 with BOM, dates
+`DD.MM.YYYY`, decimal comma.**
+
+### 11.2 Census PDF
+
+`pdfplumber` with explicit per-column bounding boxes. Do not trust automatic table
+detection.
+
+Known hazards, all handled explicitly:
+
+1. **Split tables across facing pages.** Ranks I–V left, VI–X right, cohort/year
+   label repeated **but on opposite sides of the two pages** (leftmost column on
+   the left page, rightmost column on the right page — not a mirrored layout).
+   Stitch by (municipality, cohort) key, not page order or column position.
+2. ~~Digraph corruption~~ **Does not apply.** Phase 0 confirmed the publication
+   is printed entirely in **Cyrillic** (`Љиљана`, `Ђорђевић`), not a Latin
+   transliteration — there is no `LJiljana`-style all-caps artifact to recover
+   from. `given_name.source_form` stores the Cyrillic string verbatim; a
+   Cyrillic→Latin transliteration (clean 1:1 script mapping, standard digraph
+   rules `Љ`→`Lj`, `Њ`→`Nj`, `Џ`→`Dž`) feeds `search_key` and any Latin display
+   form, same as for the newborn XLSX files.
+3. **Diacritics.** Cyrillic equivalents of `š č ć ž đ` (`ш ч ћ ж ђ`) must
+   survive — confirmed clean in the Phase 0 sample, no mojibake. If mojibake
+   ever appears, it means non-standard font encoding — fall back to per-glyph
+   mapping, never guess.
+4. **Name collisions.** Municipalities share names with districts (Šabac, Niš).
+   Join on `code_rzs`, never on the name string.
+5. **Belgrade.** Both the 17 individual city municipalities and one Republic-
+   facing aggregate row exist in the source (§9.2 finding) — decide which
+   feeds `census_rank.municipality_id`, document it here once decided.
+6. **`extract_text()` layout artifacts.** On some pages (title/cover, some
+   table headers) `pdfplumber`'s plain text extraction interleaves characters
+   from overlapping layout boxes into garbled strings. This is a z-order
+   artifact, not a font-encoding problem — don't mistake it for hazard #3.
+   Bounding-box extraction per column (already the plan) avoids it.
+
+**The parser never fills gaps.** An unreadable cell is `NULL` — never inferred,
+never interpolated from neighbouring rows, never taken from the national list.
+
+### 11.3 Validation invariants
+
+The loader refuses to commit if any fail:
+
+- Every municipality has exactly 11 cohorts.
+- Every (municipality, cohort, gender) has ranks 1..10 with no gaps — allowing
+  ties if Phase 0 found them.
+- Every name in `census_rank` resolves to a `given_name` row.
+- Municipality count matches the RZS register.
+- Every known fact in §3.1 reproduces exactly.
+- Every row's `source_key` exists in `data_source`.
+- No API response carries `evidence: "observed"` for a computed value.
+
+---
+
+## 12. API
 
 ```
-C:\projects\kakosezoves\
+GET  /api/name/{search_key}?gender=M|F
+     → one block per matching given_name (may be several, §7.2);
+       each with timeline, map, stats, and its own source attribution
+
+GET  /api/generation/{year}
+     → national top 10 M/F for that birth year (T3)
+
+GET  /api/generation/compare?a=1988&b=2008
+     → entered / left / present in both
+
+GET  /api/municipality/{slug}
+     → top 10 by cohort and gender, with national rank or not_in_top10
+
+GET  /api/cohort/{cohort_id}
+     → national top 10 for that cohort, and municipalities that deviate
+
+GET  /api/compare?a=Goran&b=Zoran&gender=M
+     → rank positions on a shared inverted axis
+
+GET  /api/newborn/{year}?gender=M|F
+GET  /api/suggest?q=gor          → prefix match on search_key, limit 10
+GET  /api/surname/{surname}      → approximate count, or evidence: unknown
+```
+
+`/api/name` returning a structured payload with `timeline`, `map` and `stats`
+blocks is preferred to separate routes that re-query the same rows.
+
+**No 404 for an unobserved name.** A name with no rows is a legitimate answer, not
+an error. Return `200` with `evidence: "unknown"`, `status: "not_observed"`,
+`reason: "source_is_top10_only"` — and per §8.1, do not attempt to distinguish
+"not in our index" from "exists but not in the top 10", because we cannot.
+
+---
+
+## 13. Local development (Windows)
+
+```
+C:\projects\imena-rs\
 ├── data\
 │   ├── raw\              # downloaded PDF and XLSX, never edited
-│   ├── normalized\       # parser output, CSV, ';' + UTF-8 BOM
+│   ├── normalized\       # parser output, ';' + UTF-8 BOM
 │   └── geo\              # municipality GeoJSON
 ├── src\
 │   ├── ingest\           # pdf_parser.py, xlsx_loader.py, geo_loader.py
@@ -479,99 +887,70 @@ C:\projects\kakosezoves\
 ├── tests\
 │   └── fixtures\         # 3 hand-transcribed PDF pages = ground truth
 ├── docs\
-│   └── DATA_NOTES.md     # ← Phase 0 output lives here
+│   └── DATA_NOTES.md     # ← Phase 0 output
 ├── requirements.txt
 └── docker-compose.yml
 ```
 
 ```powershell
-cd C:\projects\kakosezoves
+cd C:\projects\imena-rs
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 uvicorn src.api.main:app --reload --port 8000
 ```
 
-PostgreSQL locally via Docker Desktop rather than a native Windows install —
-keeps the dev environment identical to the VPS.
-
-Dependencies, and the reason each is present:
+PostgreSQL via Docker Desktop, not a native Windows install — keeps dev identical
+to the VPS.
 
 ```
-fastapi          # API framework
-uvicorn[standard]# ASGI server
-sqlalchemy       # ORM, already in the stack
-psycopg[binary]  # PostgreSQL driver
-pydantic         # request/response models
-alembic          # schema migrations
-pdfplumber       # PDF table extraction with bbox control
-openpyxl         # XLSX reading
-python-dotenv    # config
-pytest           # tests
+fastapi           # API framework
+uvicorn[standard] # ASGI server
+sqlalchemy        # ORM
+psycopg[binary]   # PostgreSQL driver
+pydantic          # request/response models
+alembic           # migrations
+pdfplumber        # PDF table extraction with bbox control
+openpyxl          # XLSX reading
+python-dotenv     # config
+pytest            # tests
 ```
-
-No other libraries without a stated reason.
 
 ---
 
-## 9. Claude Code subagent setup
+## 14. Claude Code subagents
 
-Three agents under `.claude/agents/`. The separation exists to prevent the failure
-mode where the parser gets tuned to satisfy the validator instead of reading the
-document correctly.
+Three agents under `.claude/agents/`. The separation prevents the failure mode
+where the parser gets tuned to satisfy the validator instead of reading the
+document.
 
-### `pdf-extractor.md` — worker
+**`pdf-extractor.md`** — worker. `tools: Read, Write, Edit, Bash`. Parses **one
+district per invocation**, never the whole PDF. Writes
+`data/normalized/{oblast}.csv`. Unreadable cells are `NULL`, never inferred.
 
-```
-tools: Read, Write, Edit, Bash
-```
+**`data-reviewer.md`** — reviewer. `tools: Read, Bash` — **deliberately no
+Write**. Checks the §11.3 invariants and returns a list of violations only. A
+reviewer that can patch data will patch data. Also checks evidence-class
+integrity: no response carries `evidence: "observed"` for a computed value.
 
-Parses **one district (`oblast`) per invocation**, never the whole PDF. Writes to
-`data/normalized/{oblast}.csv` (`;` separator, UTF-8 BOM). Explicit instruction:
-a cell that cannot be read is written as `NULL` — never inferred, never
-interpolated from neighbouring rows, never guessed from the national list.
+**`test-runner.md`** — `tools: Bash, Read`. Runs `pytest` against
+`tests/fixtures/` — three PDF pages transcribed by hand and verified by eye. The
+only real ground truth in the project.
 
-### `data-reviewer.md` — reviewer
-
-```
-tools: Read, Bash          # deliberately NO Write
-```
-
-Checks the §5.3 invariants and returns a **list of violations only**. It must not
-edit any file. Withholding write access is the point: a reviewer that can patch
-data will patch data.
-
-### `test-runner.md` — test-runner
-
-```
-tools: Bash, Read
-```
-
-Runs `pytest` against `tests/fixtures/` — three PDF pages transcribed **by hand**
-and verified by eye. This is the only real ground truth in the project. Without
-it, there is no way to know whether the parser is reading or hallucinating.
-
-### Orchestration rule
-
-The extractor never receives the reviewer's output directly. You read the
-violation list, decide whether the fault is in the parser or in the source
-document, and only then issue a specific instruction to the extractor. Wiring
-reviewer → extractor directly produces a loop that converges on passing the
-validator rather than on correct data.
+**Orchestration rule:** the extractor never receives the reviewer's output
+directly. You read the violations, decide whether the fault is in the parser or in
+the source, then issue a specific instruction. Wiring reviewer → extractor
+produces a loop that converges on passing the validator rather than on correct
+data.
 
 ---
 
-## 10. Open questions
+## 15. Out of scope for v1
 
-1. ~~Does the newborn XLSX contain counts?~~ **RESOLVED 2026-08-31: ranks only,
-   no counts.** See `docs/DATA_NOTES.md`. The app is a rank explorer end-to-end.
-2. **Exact cohort labels** as printed in the census PDF — read them, do not assume.
-3. **Belgrade handling** — separate city municipalities, aggregate, or both?
-4. **Municipality GeoJSON source and licence** — needs picking and recording.
-5. **RZS response** to the custom tabulation request — unknown timeline.
-6. **Newborn layer geography** — the 2023 XLSX gives district-level (`oblast`)
-   breakdowns, not just Republic-level, and has no municipality granularity at
-   all. Decide whether `newborn_name` needs a nullable `district_id` column (or
-   a sibling table) to preserve that, instead of being implicitly
-   Republic-only as currently drafted in §4. See `docs/DATA_NOTES.md` for the
-   full group list found in the file.
+Login · user accounts · AI features of any kind · etymology or name-meaning layer ·
+external name dictionaries (§8.1) · algorithmic similar-name suggestions (§5.1) ·
+React or any frontend framework · Redis · Elasticsearch · microservices ·
+Kubernetes.
+
+The dataset is roughly 40,000 rows. PostgreSQL and vanilla JS are not a compromise
+here — they are correctly sized.
