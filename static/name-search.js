@@ -115,12 +115,37 @@ function renderNameBlock(block) {
     renderUnknownNote(wrap, newborn ? newborn.reason : "scope_not_published");
   }
 
-  if (block.municipality_data && block.municipality_data.not_yet_loaded) {
-    const note = document.createElement("p");
-    note.className = "source-note";
-    note.textContent =
-      "Podaci po opštinama (mapa, popis 2022) još nisu učitani u ovu verziju sajta.";
-    wrap.appendChild(note);
+  // "Gde" — municipality count, best rank, appearances (§7.1)
+  const gdeHeading = document.createElement("h4");
+  gdeHeading.textContent = "Gde";
+  wrap.appendChild(gdeHeading);
+
+  const muniCount = block.municipality_count;
+  const bestRank = block.best_rank;
+  if (isKnown(muniCount) && isKnown(bestRank)) {
+    const p = document.createElement("p");
+    p.textContent = `U top 10 u ${muniCount.value} ${muniCount.value === 1 ? "opštini" : "opština"}. Najbolji rezultat: #${bestRank.value.rank} u ${bestRank.value.municipality} (rođeni ${bestRank.value.cohort}).`;
+    wrap.appendChild(p);
+
+    const appearances = block.appearances;
+    if (isKnown(appearances) && appearances.value.length > 0) {
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = `Sve opštine (${appearances.value.length} zapisa)`;
+      details.appendChild(summary);
+      const list = document.createElement("div");
+      renderRankList(
+        list,
+        appearances.value.map((a) => ({
+          rank: a.rank,
+          name: `${a.municipality} — rođeni ${a.cohort}`,
+        }))
+      );
+      details.appendChild(list);
+      wrap.appendChild(details);
+    }
+  } else {
+    renderUnknownNote(wrap, muniCount ? muniCount.reason : "source_is_top10_only");
   }
 
   return wrap;

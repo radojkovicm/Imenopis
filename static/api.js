@@ -27,6 +27,20 @@ export function compareGenerations(a, b) {
   return getJSON(`/generation/compare?a=${a}&b=${b}`);
 }
 
+export function listMunicipalities() {
+  return getJSON("/municipality");
+}
+
+export function getMunicipality(slug, gender) {
+  const qs = gender ? `?gender=${gender}` : "";
+  return getJSON(`/municipality/${encodeURIComponent(slug)}${qs}`);
+}
+
+export function getCohortDeviation(cohortId, gender) {
+  const qs = gender ? `?gender=${gender}` : "";
+  return getJSON(`/cohort/${cohortId}${qs}`);
+}
+
 export function getNewborn(year, { gender, district } = {}) {
   const params = new URLSearchParams();
   if (gender) params.set("gender", gender);

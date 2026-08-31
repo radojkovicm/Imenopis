@@ -148,7 +148,14 @@ class CensusRank(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     given_name_id: Mapped[int] = mapped_column(ForeignKey("given_name.id"), nullable=False, index=True)
-    municipality_id: Mapped[int] = mapped_column(ForeignKey("municipality.id"), nullable=False, index=True)
+    # Nullable, deliberately - beyond PROJECT.md §6.5's original NOT NULL.
+    # NULL = the Republic-level row for that cohort/gender (T1/T2 print a
+    # national top-10 per cohort alongside every municipality's; §7.4 needs
+    # it for the municipality-vs-national comparison column). Populated =
+    # a real municipality. Same "nullable column absorbs a source dimension
+    # the original schema had no slot for" pattern already used for
+    # newborn_name.district_id.
+    municipality_id: Mapped[int | None] = mapped_column(ForeignKey("municipality.id"), index=True)
     cohort_id: Mapped[int] = mapped_column(ForeignKey("cohort.id"), nullable=False, index=True)
     gender: Mapped[str] = mapped_column(String(1), nullable=False)
     rank: Mapped[int] = mapped_column(SmallInteger, nullable=False)

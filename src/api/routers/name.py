@@ -17,19 +17,18 @@ must not conflate them:
 
 So: group given_name rows by (source_form, gender) for display. Each group
 becomes one block whose per-row observations (timeline entries, newborn
-appearances) are merged and still individually source-attributed; the block
-itself is never treated as a merged statistical unit for anything beyond
-that (§6.2 still applies - across DIFFERENT source_forms, nothing is summed).
+appearances, municipality data) are merged and still individually
+source-attributed; the block itself is never treated as a merged
+statistical unit for anything beyond that (§6.2 still applies - across
+DIFFERENT source_forms, nothing is summed).
 
-Phase 1 scope: only Table 3 (national, by birth year) and the newborn XLSX
-layer are loaded (Step 1 of §10's build order). Table 1/2 (municipality-level
-census ranks, which feed the map and the "Gde"/§7.1 section) are Step 3 -
-not yet in the database. This endpoint reports what it has as `observed`,
-and is explicit - via `not_yet_loaded` - about the parts of §7.1 it cannot
-yet answer, rather than pretending they're `unknown` for evidential reasons
-they are not. `unknown` per §4 means "the source cannot answer it"; missing
-because Step 3 hasn't run yet is a different, temporary condition and must
-not be reported the same way.
+§7.1 "Gde" (municipality count, highest rank, map) reads census_rank
+(Table 1/2, Step 3 of §10) by (source_form, gender) - census_rank's
+given_name rows use their own source_key (census_2022_t1/t2), a disjoint
+given_name_id space from T3/newborn's, so they can't be picked up via the
+T3/newborn given_name_id list already collected above; they're looked up
+separately by the same (source_form, gender) key the whole block is
+grouped by.
 
 No 404 for an unobserved name (§12): a name with no rows is a legitimate
 `evidence: unknown` answer, not an error.
@@ -38,11 +37,14 @@ No 404 for an unobserved name (§12): a name with no rows is a legitimate
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from src.api.envelope import ObservedValue, Scope, UnknownValue
-from src.db.models import CensusRankByYear, District, GivenName, NewbornName
+from src.api.envelope import DerivedValue, ObservedValue, Scope, UnknownValue
+from src.db.models import CensusRank, CensusRankByYear, Cohort, District, GivenName, Municipality, NewbornName
 from src.db.session import get_session
+from src.ingest.seed_sources import CENSUS_T1_KEY, CENSUS_T2_KEY
 
 router = APIRouter(prefix="/api/name", tags=["name"])
+
+SOURCE_BY_GENDER = {"F": CENSUS_T1_KEY, "M": CENSUS_T2_KEY}
 
 
 def _session() -> Session:
@@ -87,6 +89,69 @@ def _newborn_appearances(session: Session, given_name_id: int) -> list[dict]:
         }
         for r, d in rows
     ]
+
+
+def _municipality_data(session: Session, source_form: str, gender: str) -> dict:
+    """§7.1 'Gde': municipality count, highest rank achieved and where.
+    Looked up by (source_form, gender) directly against census_rank's own
+    given_name rows (source_key = census_2022_t1/t2) - see module docstring.
+    Excludes the Republic-level row (municipality_id IS NULL) from the
+    per-municipality list and count, since that's the national side, not a
+    place (§7.4's national comparison is served by /api/municipality, not
+    duplicated here).
+    """
+    source = SOURCE_BY_GENDER[gender]
+    rows = (
+        session.query(CensusRank, Municipality, Cohort)
+        .join(GivenName, CensusRank.given_name_id == GivenName.id)
+        .join(Municipality, CensusRank.municipality_id == Municipality.id)
+        .join(Cohort, CensusRank.cohort_id == Cohort.id)
+        .filter(
+            GivenName.source_form == source_form,
+            GivenName.gender == gender,
+            GivenName.source_key == source,
+            CensusRank.municipality_id.is_not(None),
+        )
+        .all()
+    )
+    if not rows:
+        return {
+            "municipality_count": UnknownValue(reason="source_is_top10_only").model_dump(),
+            "best_rank": UnknownValue(reason="source_is_top10_only").model_dump(),
+            "appearances": UnknownValue(reason="source_is_top10_only").model_dump(),
+        }
+
+    distinct_municipalities = {m.id for _, m, _ in rows}
+    best = min(rows, key=lambda t: t[0].rank)
+    best_rank_row, best_muni, best_cohort = best
+
+    appearances = [
+        {
+            "municipality": m.name,
+            "slug": m.name_slug,
+            "cohort": c.label,
+            "rank": r.rank,
+        }
+        for r, m, c in sorted(rows, key=lambda t: (t[1].name, t[2].sort_order))
+    ]
+
+    return {
+        "municipality_count": DerivedValue(
+            value=len(distinct_municipalities),
+            derived_from=[source],
+            note="count_of_distinct_municipalities_where_in_top10",
+        ).model_dump(),
+        "best_rank": ObservedValue(
+            value={"rank": best_rank_row.rank, "municipality": best_muni.name, "cohort": best_cohort.label},
+            source=source,
+            scope=Scope(gender=gender),
+        ).model_dump(),
+        "appearances": ObservedValue(
+            value=appearances,
+            source=source,
+            scope=Scope(gender=gender),
+        ).model_dump(),
+    }
 
 
 @router.get("/{search_key}")
@@ -140,11 +205,8 @@ def get_name(search_key: str, gender: str | None = None, session: Session = Depe
             ).model_dump()
             if newborn
             else UnknownValue(reason="scope_not_published").model_dump(),
-            # §7.1 "Gde" (municipality count, map) needs Table 1/2, not yet
-            # loaded (Step 3 of §10). Distinguished from `unknown` per this
-            # module's docstring - not an evidence gap, a build-order gap.
-            "municipality_data": {"not_yet_loaded": True, "reason": "table_1_2_not_loaded_until_phase3"},
         }
+        block.update(_municipality_data(session, source_form, gender_val))
         blocks.append(block)
 
     # §7.2: surface the split explicitly only when genuinely different
