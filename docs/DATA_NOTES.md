@@ -235,6 +235,27 @@ name list and are different names, not variants).
 
 ---
 
+## 6a. Phase 1 finding: Table 3 publishes ranks I–V only, not I–X (2026-08-31)
+
+Found while writing `src/ingest/pdf_parser.py` — not caught during Phase 0's
+sampling, which only looked at pages 222–223 and didn't check whether a VI–X
+continuation existed. It doesn't: **Table 3 is exactly 4 pages** —
+222 (female I–V, years 1940–1981), 223 (male I–V, 1940–1981), 224 (female I–V
+continued, 1982–2022), 225 (male I–V continued, 1982–2022). Every page in the
+215–228 range was checked programmatically for a `"VI VII VIII IX X"` header;
+it never appears. Page 228 is already Table 4.
+
+This differs from T1/T2/T4, which all go to rank X. **`census_rank_by_year`
+will only ever have ranks 1–5 populated** for this source — not a bug, a
+property of what RZS chose to publish for the by-year breakdown. No schema
+change needed (§6.5's `census_rank_by_year.rank` has no 1–10 CHECK constraint,
+unlike `census_rank.rank`).
+
+Parser output verified against the §3.1 known-facts fixtures: 830 rows total
+(83 years × 2 genders × 5 ranks, exactly, no gaps), 2022 female top 5 =
+Софија/Мила/Дуња/Теодора/Сара, 2022 male top 5 = Лука/Лазар/Василије/Богдан/Вук,
+`1940. и раније` both genders match the fixture list exactly.
+
 ## 6. Open items carried forward (update `PROJECT007.md` §9 checklist status)
 
 All §9.1 and §9.2 checklist items are now answered above. Remaining
