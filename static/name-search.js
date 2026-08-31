@@ -148,6 +148,38 @@ function renderNameBlock(block) {
     renderUnknownNote(wrap, muniCount ? muniCount.reason : "source_is_top10_only");
   }
 
+  // §7.5 persistence — longest consecutive run, expressed as a year span
+  // (§5.4: never a count of cohorts/generations).
+  const persistHeading = document.createElement("h4");
+  persistHeading.textContent = "Najduži period u top listi";
+  wrap.appendChild(persistHeading);
+
+  const natPersist = block.national_persistence;
+  if (isKnown(natPersist)) {
+    const p = document.createElement("p");
+    p.textContent = `Nacionalno (top 5): u top listi kod rođenih ${natPersist.value.year_from}–${natPersist.value.year_to}.`;
+    wrap.appendChild(p);
+  } else {
+    renderUnknownNote(wrap, natPersist ? natPersist.reason : "source_is_top5_only");
+  }
+
+  const muniPersist = block.municipality_persistence;
+  if (isKnown(muniPersist) && muniPersist.value.length > 0) {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = `Po opštini (top 10, ${muniPersist.value.length} opština)`;
+    details.appendChild(summary);
+    const ul = document.createElement("ul");
+    for (const m of muniPersist.value) {
+      const li = document.createElement("li");
+      const span = m.year_from != null ? `${m.year_from}–${m.year_to}` : `do ${m.year_to}`;
+      li.textContent = `${m.municipality}: rođeni ${span}`;
+      ul.appendChild(li);
+    }
+    details.appendChild(ul);
+    wrap.appendChild(details);
+  }
+
   return wrap;
 }
 

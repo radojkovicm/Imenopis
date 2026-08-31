@@ -1,4 +1,4 @@
-import { getGeneration, compareGenerations } from "/static/api.js";
+import { getGeneration, compareGenerations, getAcrossDecades } from "/static/api.js";
 import { renderRankList, renderUnknownNote, isKnown } from "/static/evidence.js";
 
 const yearForm = document.getElementById("year-form");
@@ -112,4 +112,50 @@ function renderCompareResult(data) {
 
     compareResult.appendChild(section);
   }
+}
+
+const decadesForm = document.getElementById("decades-form");
+const decadesYearInput = document.getElementById("decades-year");
+const decadesResult = document.getElementById("decades-result");
+
+decadesForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const year = parseInt(decadesYearInput.value, 10);
+  if (!year) return;
+  decadesResult.innerHTML = "<p>Tražim…</p>";
+  const data = await getAcrossDecades(year);
+  renderDecadesResult(data);
+});
+
+function renderDecadesResult(data) {
+  decadesResult.innerHTML = "";
+  const cols = document.createElement("div");
+  cols.className = "compare-columns";
+  cols.style.gridTemplateColumns = "1fr 1fr";
+
+  for (const [label, entries] of [
+    ["Da si devojčica", data.female],
+    ["Da si dečak", data.male],
+  ]) {
+    const col = document.createElement("div");
+    const h4 = document.createElement("h4");
+    h4.textContent = label;
+    col.appendChild(h4);
+    const ul = document.createElement("ul");
+    for (const e of entries) {
+      const li = document.createElement("li");
+      const nameKnown = e.name.evidence !== "unknown";
+      li.textContent = nameKnown ? `${e.year}. — ${e.name.value}` : `${e.year}. — nema podataka`;
+      ul.appendChild(li);
+    }
+    col.appendChild(ul);
+    cols.appendChild(col);
+  }
+
+  decadesResult.appendChild(cols);
+
+  const note = document.createElement("p");
+  note.className = "source-note";
+  note.textContent = "Najčešće (#1) ime te godine, na republičkom nivou, unazad po deceniji.";
+  decadesResult.appendChild(note);
 }

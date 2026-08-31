@@ -27,6 +27,10 @@ export function compareGenerations(a, b) {
   return getJSON(`/generation/compare?a=${a}&b=${b}`);
 }
 
+export function getAcrossDecades(year) {
+  return getJSON(`/generation/across-decades?year=${year}`);
+}
+
 export function listMunicipalities() {
   return getJSON("/municipality");
 }

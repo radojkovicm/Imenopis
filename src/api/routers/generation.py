@@ -57,6 +57,48 @@ def compare_generations(a: int, b: int, session: Session = Depends(_session)):
     return response
 
 
+@router.get("/across-decades")
+def across_decades(year: int, session: Session = Depends(_session)):
+    """§7.3's second follow-on: 'Kako bi te zvali da si rođen ranije' - the
+    #1 name of `year` across several earlier decades. Pure T3 lookup, one
+    row per decade back to MIN_YEAR, each independently `observed` or
+    `unknown` (a decade with no #1 - shouldn't happen inside MIN_YEAR..
+    MAX_YEAR, but T3 rows can theoretically be sparse - is never silently
+    skipped or padded).
+    """
+    if year < MIN_YEAR or year > MAX_YEAR:
+        return {
+            "year": year,
+            "female": UnknownValue(reason="scope_not_published").model_dump(),
+            "male": UnknownValue(reason="scope_not_published").model_dump(),
+        }
+
+    years = []
+    y = year
+    while y >= MIN_YEAR:
+        years.append(y)
+        y -= 10
+
+    response = {"year": year, "years": years}
+    for gender, key in (("F", "female"), ("M", "male")):
+        entries = []
+        for y in years:
+            top = _top_names(session, y, gender)
+            first = next((row for row in top if row["rank"] == 1), None)
+            entries.append(
+                {
+                    "year": y,
+                    "name": ObservedValue(
+                        value=first["name"], source=CENSUS_T3_KEY, scope=Scope(birth_year=y, gender=gender)
+                    ).model_dump()
+                    if first
+                    else UnknownValue(reason="scope_not_published").model_dump(),
+                }
+            )
+        response[key] = entries
+    return response
+
+
 @router.get("/{year}")
 def get_generation(year: int, session: Session = Depends(_session)):
     if year < MIN_YEAR or year > MAX_YEAR:
