@@ -1,17 +1,17 @@
 """Loads Table 1/Table 2 (municipality-level census ranks) into `municipality`,
 `cohort`, and `census_rank` (Step 3 of PROJECT.md §10's build order).
 
-**Scope decision**: `census_rank.municipality_id` is `NOT NULL` in the schema
-(§6.5) - it has no slot for Republic/macro-region/NUTS-2-region/oblast rollup
-rows, only real municipalities. This loader therefore persists only the 168
-real municipality-level rows (140 plain opština + 28 Grad-subdistrict rows,
-per docs/DATA_NOTES.md §7) into `census_rank`. The Republic-level and
-region/oblast-level rows that `t1t2_parser.py` also extracts (for the 9
-rollup labels) are parsed but NOT loaded here - there's currently no table
-they belong in. This is a real, deliberate gap versus what the source
-actually contains, not an oversight - flagged here and in docs/DATA_NOTES.md
-so a future schema change (if §7.4's municipality-vs-national comparison
-needs it) has a clear starting point rather than rediscovering the gap.
+**Scope decision**: `census_rank.municipality_id` was made nullable (beyond
+PROJECT.md §6.5's original NOT NULL - see src/db/models.py's CensusRank
+docstring) specifically so the Republic-level row for each cohort/gender
+could be persisted (NULL municipality_id) - §7.4 needs it for the
+municipality-vs-national comparison column. This loader therefore persists:
+the 168 real municipality-level rows (140 plain opština + 28 Grad-subdistrict
+rows, per docs/DATA_NOTES.md §7), AND the Republic-level rows. The
+macro-region (СРБИЈА – СЕВЕР/ЈУГ) and NUTS-2-region/oblast rollup rows that
+`t1t2_parser.py` also extracts are still NOT loaded - nothing in the spec's
+feature set needs them, and adding storage for data nothing reads would be
+unused complexity, not faithfulness to the source.
 """
 
 import sys
@@ -112,6 +112,8 @@ def load_census_rank(
         given_name_cache[key] = gn.id
         return gn.id
 
+    REPUBLIC_LABEL = "РЕПУБЛИКА СРБИЈА"
+
     total = 0
     skipped_rollup = 0
     for gender, page_range, source_key in (
@@ -123,12 +125,15 @@ def load_census_rank(
         count = 0
         for r in rows:
             muni_key = (r.geography_label, r.parent_grad)
-            if muni_key not in municipality_ids:
-                # Republic / macro-region / NUTS-2 region / oblast rollup -
-                # not loaded into census_rank (see module docstring).
+            if r.geography_label == REPUBLIC_LABEL:
+                municipality_id = None  # §7.4: Republic-level row, national comparison column
+            elif muni_key not in municipality_ids:
+                # macro-region / NUTS-2 region / oblast rollup - not loaded
+                # into census_rank (see module docstring).
                 skipped_rollup += 1
                 continue
-            municipality_id = municipality_ids[muni_key]
+            else:
+                municipality_id = municipality_ids[muni_key]
             cohort_id = cohort_ids[r.cohort_label]
             gn_id = get_or_create_given_name(r.source_form, source_key, gender)
             existing = (

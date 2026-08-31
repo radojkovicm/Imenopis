@@ -586,8 +586,8 @@ column is where local character shows.
 They read different tables and cannot be merged:
 
 - **National** — slider over single birth years, T3, **no map** (T3 has no geography)
-- **Geographic** — 11-step control over cohorts, T1–T2, **with map** (T1–T2 have
-  no per-year resolution)
+- **Geographic** — 9-step control over cohorts (corrected by Phase 0 — see
+  §9.1), T1–T2, **with map** (T1–T2 have no per-year resolution)
 
 Never label the geographic control with years.
 

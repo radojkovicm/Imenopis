@@ -1,0 +1,29 @@
+<title>imena-rs — izaberi opštinu</title>
+<link rel="stylesheet" href="/static/style.css" />
+
+<header class="site-header">
+  <a href="/">imena-rs</a>
+  <nav>
+    <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Izaberi opštinu</h1>
+  <p class="lead">
+    168 opština i gradskih opština iz popisa 2022 — najčešća imena po
+    generaciji, upoređena sa državnim prosekom.
+  </p>
+
+  <form class="search-form" id="filter-form" autocomplete="off">
+    <input type="text" id="filter-input" placeholder="Pretraži opštinu…" />
+  </form>
+
+  <ul id="municipality-list" class="rank-list" style="max-height: 60vh; overflow-y: auto;"></ul>
+</main>
+
+<footer class="site-footer">
+  Izvor: Republički zavod za statistiku (Popis 2022). Obrada: imena-rs.
+</footer>
+
+<script type="module" src="/static/municipalities.js"></script>
