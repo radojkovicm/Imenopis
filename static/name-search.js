@@ -69,11 +69,11 @@ async function search(rawQuery) {
   }
 
   for (const block of data.matches) {
-    resultEl.appendChild(renderNameBlock(block));
+    resultEl.appendChild(renderNameBlock(block, data.search_key));
   }
 }
 
-function renderNameBlock(block) {
+function renderNameBlock(block, searchKey) {
   const wrap = document.createElement("div");
   wrap.className = "name-block";
 
@@ -86,6 +86,18 @@ function renderNameBlock(block) {
     sourceTag.className = "badge";
     sourceTag.textContent = key;
     h3.appendChild(sourceTag);
+  }
+
+  // §16.5: cross-link to the historical layer - never inline, always a
+  // separate page, so the two corpora (statistical vs. historical) stay
+  // visibly distinct (§16.3 rule 4).
+  if (block.historical_available) {
+    const histLink = document.createElement("p");
+    const a = document.createElement("a");
+    a.href = `/static/historical.html?q=${encodeURIComponent(searchKey)}`;
+    a.textContent = "Ime kroz istoriju →";
+    histLink.appendChild(a);
+    wrap.appendChild(histLink);
   }
 
   // "Kada" — national timeline by birth year (§7.1)

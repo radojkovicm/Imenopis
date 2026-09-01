@@ -78,7 +78,10 @@ class NameClusterMember(Base):
     __tablename__ = "name_cluster_member"
     __table_args__ = (
         CheckConstraint(
-            "decided_by IN ('exact_match','digraph_normalization','manual')",
+            # 'historical_variant' added for §16.3 rule 6 (centuries-spanning
+            # form grouping, e.g. Stefan/Stepan/Štefan) - always a linguistic
+            # judgment call like 'manual', never a mechanical transformation.
+            "decided_by IN ('exact_match','digraph_normalization','manual','historical_variant')",
             name="ck_cluster_member_decided_by",
         ),
     )

@@ -66,6 +66,21 @@ export function getCohortDeviation(cohortId, gender) {
   return getJSON(`/cohort/${cohortId}${qs}`);
 }
 
+export function getHistorical(searchKey, gender) {
+  const qs = gender ? `?gender=${gender}` : "";
+  return getJSON(`/historical/${encodeURIComponent(searchKey)}${qs}`);
+}
+
+export function listHistorical({ periodStart, periodEnd, nameType, gender } = {}) {
+  const params = new URLSearchParams();
+  if (periodStart) params.set("period_start", periodStart);
+  if (periodEnd) params.set("period_end", periodEnd);
+  if (nameType) params.set("name_type", nameType);
+  if (gender) params.set("gender", gender);
+  const qs = params.toString();
+  return getJSON(`/historical${qs ? "?" + qs : ""}`);
+}
+
 export function getNewborn(year, { gender, district } = {}) {
   const params = new URLSearchParams();
   if (gender) params.set("gender", gender);

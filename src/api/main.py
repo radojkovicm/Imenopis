@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from src.api.routers import cohort, generation, municipality, name, newborn, suggest
+from src.api.routers import cohort, generation, historical, municipality, name, newborn, suggest
 from src.config import settings
 from src.db.session import init_db
 
@@ -33,6 +33,7 @@ app.include_router(newborn.router)
 app.include_router(suggest.router)
 app.include_router(municipality.router)
 app.include_router(cohort.router)
+app.include_router(historical.router)
 app.include_router(name.router)
 
 # Static site (§6.2: vanilla JS, no build step). Mounted after the /api

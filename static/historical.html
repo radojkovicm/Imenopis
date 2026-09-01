@@ -1,0 +1,52 @@
+<title>imenopis.rs — istorijska imena</title>
+<link rel="stylesheet" href="/static/style.css" />
+
+<header class="site-header" id="site-header">
+  <a href="/">imenopis.rs</a>
+  <nav>
+    <a href="/static/about.html">O Imenopisu</a>
+    <a href="/static/historical.html">Istorijska imena</a>
+    <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Istorijska imena Srbije</h1>
+  <p class="lead">
+    Imena potvrđena u srednjovekovnim i osmanskim izvorima — povelje,
+    pomenici, defteri, naučni radovi. Ovo je odvojen izvor od popisa i
+    vitalne statistike (2022–2025) i nikad se ne meša sa njima — svaki
+    zapis ovde nosi svoj citat i sopstveni nivo pouzdanosti.
+  </p>
+
+  <form class="search-form" id="hist-name-form" autocomplete="off">
+    <input type="text" id="hist-name-input" placeholder="npr. Vuk" />
+    <button type="submit">Traži</button>
+  </form>
+  <div id="hist-name-result"></div>
+
+  <h2>Pregled po filteru</h2>
+  <form class="search-form" id="hist-filter-form">
+    <select id="hist-name-type">
+      <option value="">Svi tipovi</option>
+      <option value="native_slavic">Slovensko</option>
+      <option value="christian">Hrišćansko</option>
+      <option value="noble">Plemićko</option>
+      <option value="folk">Narodno</option>
+      <option value="other">Ostalo</option>
+    </select>
+    <select id="hist-gender">
+      <option value="">Sva imena</option>
+      <option value="F">Ženska</option>
+      <option value="M">Muška</option>
+    </select>
+    <button type="submit">Prikaži</button>
+  </form>
+  <div id="hist-filter-result"></div>
+</main>
+
+<footer class="site-footer">
+  Izvor: kurirani istorijski korpus (§16) — vidi citat uz svaki zapis. Obrada: imenopis.rs.
+</footer>
+
+<script type="module" src="/static/historical.js"></script>

@@ -216,8 +216,9 @@ Keep these separate. `evidence` describes **what we can know**; `status` describ
 ```
 
 `status` vocabulary: `observed` · `not_observed` · `suppressed` · `not_applicable`.
-`reason` vocabulary: `source_is_top10_only` · `scope_not_published` ·
-`source_has_no_counts` · `below_confidentiality_threshold`.
+`reason` vocabulary: `source_is_top10_only` · `source_is_top5_only` ·
+`scope_not_published` · `source_has_no_counts` · `below_confidentiality_threshold` ·
+`no_historical_source_for_period` (§16).
 
 ### 4.3 API envelope
 
@@ -957,10 +958,170 @@ data.
 
 ## 15. Out of scope for v1
 
-Login · user accounts · AI features of any kind · etymology or name-meaning layer ·
-external name dictionaries (§8.1) · algorithmic similar-name suggestions (§5.1) ·
-React or any frontend framework · Redis · Elasticsearch · microservices ·
-Kubernetes.
+Login · user accounts · AI features of any kind · unsourced etymology or
+name-meaning summaries · external name dictionaries not tied to a checkable
+primary source (§8.1, §16.1) — a curated, citation-bearing historical
+attestation corpus is in scope, see §16; a general meaning/origin dictionary is
+not · algorithmic similar-name suggestions (§5.1) · React or any frontend
+framework · Redis · Elasticsearch · microservices · Kubernetes.
 
 The dataset is roughly 40,000 rows. PostgreSQL and vanilla JS are not a compromise
 here — they are correctly sized.
+
+---
+
+## 16. Historical layer
+
+A second, editorially curated corpus alongside the statistical one (§1–§15).
+Where §1–§15 answer "how common is this name today, and where" from
+government publications, this layer answers "is this name attested before
+modern record-keeping, in what document, and how sure are we." The two
+corpora are never merged into one number or one confidence score — a name's
+historical page and its statistical page are always presented as separate,
+independently sourced answers.
+
+### 16.1 Why this is not what §15 forbade
+
+§15 excluded "etymology or name-meaning layer" and "external name
+dictionaries." That rule targeted a specific failure mode: an unsourced list
+of "Name X means Y, origin: Slavic" copied from some other website, sitting
+inside a statistics product and borrowing its trust without earning it
+(§8.1's core argument, verbatim: "an unsourced list inside a statistics
+product damages the thing that makes it trustworthy").
+
+This layer is not that. Every row cites a named, checkable document — a
+charter, a monastery pomenik, an Ottoman defter, or a published academic
+paper with author and year — never a general-purpose etymology dictionary,
+never a meaning/origin summary invented or scraped without a citation. §15's
+ban on external name dictionaries and unsourced etymology **stays in force**.
+What changes is narrower: a curated, citation-bearing historical corpus is
+now in scope, with its own confidence taxonomy (§16.2) precisely so that
+"attested in document X" is never confused with "this is what the name
+means" or "this name is common."
+
+### 16.2 Historical confidence — a field, not a replacement for `evidence`
+
+`evidence` (§4) still governs every value: a historical attestation that
+exists is `evidence: "observed"`, `status: "observed"` — we read it in a
+named source. A period/name combination with no attestation is
+`evidence: "unknown"`, `status: "not_observed"`, `reason:
+"no_historical_source_for_period"` (§4.2).
+
+`historical_confidence` is an **additional, independent field** on every
+historical attestation, answering "how much should this specific source be
+trusted for this specific claim" — not "do we know it" (that is what
+`evidence` already answers) but "should this be presented as fact, as
+attested, or as speculation."
+
+| Level | Meaning | Example source | May render as |
+|-------|---------|-----------------|----------------|
+| **A** | Statistically proven — census, civil registry, a source with a real denominator | RZS, matične knjige | "najčešće ime [perioda/opštine]" |
+| **B** | Quantitative historical source — a corpus large enough to support a frequency claim | Defter sa brojem pojavljivanja, veliki korpus povelja | "među najčešće zabeleženim imenima" |
+| **C** | Attested — the name appears in one or more authentic period documents | Jedna povelja, jedan pomenik | "ime je potvrđeno u ovom periodu" |
+| **D** | Reconstructed or inferred — etymological reconstruction, a later form projected backward without a dated attestation | Pretpostavljeni praslovenski oblik | never "potvrđeno"; must render as "pretpostavljeno" or "rekonstruisano" with the reasoning source cited |
+
+Levels A and B are functionally different from C and D in one critical way:
+**only A and B may ever support a frequency or ranking claim** ("most
+common", "among the most attested"). C and D may only support an
+*existence* claim ("this name is attested / this name is a proposed
+reconstruction"), never a frequency claim — because a handful of surviving
+charters is not a sample anyone can generalize from (§16.3 rule 1).
+
+### 16.3 Hard rules
+
+1. **No frequency or ranking claim below confidence B.** "Najčešće ime
+   srednjeg veka" or any equivalent must never be generated from
+   confidence-C or -D rows, regardless of how many C-level attestations
+   exist for a name — attestation count is not sample size. This mirrors
+   §5.1's rule that absence of counts caps what a rank can mean; here,
+   absence of a real corpus caps what an attestation count can mean.
+2. **Confidence D is never shown as an attested fact.** UI copy for a
+   `historical_confidence: "D"` row must use `pretpostavljeno` /
+   `rekonstruisano` language and must surface the reasoning source. No copy
+   string may present a D-level name form the same way a C, B, or A form is
+   presented.
+3. **No population claim from a historical attestation.** "This name was
+   common in the 14th century" is a claim about a population; an
+   attestation is a claim about a document. A count of surviving
+   attestations describes the surviving corpus, not the medieval
+   population, and any copy generated from `attestation_count` must say so
+   explicitly (mirrors §8.1's "we cannot distinguish absence in the source
+   from absence in reality").
+4. **No merging of the historical corpus with the statistical corpus**
+   (§6.6's rule extended). A name's historical timeline and its RZS-era
+   timeline (1940–2025) are shown as two separate blocks, never stitched
+   into one continuous "popularity through history" line — the two corpora
+   have incompatible evidentiary bases (one is a full-population
+   census/registry, the other is a survivorship-biased documentary record).
+5. **Every historical row cites a real, checkable source.** No row without
+   a source may exist — enforced at the schema level (NOT NULL FK), not
+   just by convention.
+6. **Variant/cognate grouping across centuries is always `manual` or
+   `historical_variant` in `name_cluster`, never automatic.** Unlike modern
+   digraph folding (§9.5 / BRANCH B), a centuries-spanning claim like
+   "Stepan is the same name as Štefan" is a linguistic argument, not a
+   mechanical transformation, and always requires a `decision_note` citing
+   the reasoning.
+7. **`region`, when present, describes where the document was found or what
+   territory it covers — never projected onto modern municipality
+   boundaries.** A Smederevski sandžak defter is not equivalent to a modern
+   opština; never join historical `region` text to `municipality` rows.
+
+### 16.4 Data model
+
+Extends §6's convention (`source_form` is authoritative, `search_key` is for
+lookup only) rather than replacing it. Historical sources are rows in the
+existing `data_source` table (§6.6) with `measure = 'attestation'` — a
+`given_name` row for a historical form points at one of these via the same
+`source_key` column every other `given_name` row already uses, so
+`/api/suggest` and the search-key index work for historical names with no
+schema change to `given_name` at all.
+
+```sql
+-- 1:1 extension of a data_source row whose measure = 'attestation'.
+CREATE TABLE historical_source_meta (
+    data_source_key   TEXT PRIMARY KEY REFERENCES data_source(key),
+    author            TEXT,                -- modern editor/scholar, if applicable
+    publication_year  INT,                 -- year of the modern edition/analysis, not the document
+    source_type       TEXT NOT NULL CHECK (source_type IN
+                          ('charter','monastery_register','ottoman_defter',
+                           'academic_paper','other')),
+    citation          TEXT NOT NULL
+);
+
+CREATE TABLE historical_name_attestation (
+    id                     BIGSERIAL PRIMARY KEY,
+    given_name_id          INT NOT NULL REFERENCES given_name(id),
+    period_start           INT,             -- year, nullable (century-level precision only)
+    period_end             INT,
+    region                 TEXT,            -- free text, document's own territory — §16.3 rule 7
+    name_type              TEXT CHECK (name_type IN
+                                ('native_slavic','christian','noble','folk','other')),
+    historical_confidence  TEXT NOT NULL CHECK (historical_confidence IN ('A','B','C','D')),
+    frequency_level        TEXT CHECK (frequency_level IN
+                                ('dominant','very_common','common','attested','rare','uncertain')),
+    attestation_count      INT,             -- nullable; only meaningful with confidence B
+    citation_note          TEXT NOT NULL    -- page/folio/entry reference within the source
+);
+CREATE INDEX ON historical_name_attestation (given_name_id);
+CREATE INDEX ON historical_name_attestation (historical_confidence);
+```
+
+`frequency_level` is categorical by design (§16.2 / §16.3 rule 1) — there is
+no numeric `frequency_rank` column, because ranking implies a comparable
+population across candidates, which the historical corpus cannot supply
+except at confidence B.
+
+`name_cluster_member.decided_by` (§6.2) gains a fifth value,
+`'historical_variant'`, alongside `exact_match` / `digraph_normalization` /
+`manual` — for centuries-spanning form grouping (§16.3 rule 6).
+`decision_note` stays mandatory whenever `decided_by` is `manual` or
+`historical_variant`.
+
+### 16.5 Feature: "Istorijska imena Srbije"
+
+A dedicated page, filterable by period and `name_type`, plus a per-name "Ime
+kroz istoriju" block linked from the name page. Never folded into §7.1's
+four required statistical blocks — always a clearly separate, clearly
+labeled section or link, so a reader is never in doubt about which corpus a
+given claim came from.

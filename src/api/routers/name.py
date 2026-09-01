@@ -38,7 +38,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from src.api.envelope import DerivedValue, ObservedValue, Scope, UnknownValue
-from src.db.models import CensusRank, CensusRankByYear, Cohort, District, GivenName, Municipality, NewbornName
+from src.db.models import CensusRank, CensusRankByYear, Cohort, DataSource, District, GivenName, Municipality, NewbornName
 from src.db.session import get_session
 from src.ingest.seed_sources import CENSUS_T1_KEY, CENSUS_T2_KEY
 
@@ -327,6 +327,20 @@ def get_name(search_key: str, gender: str | None = None, session: Session = Depe
             ).model_dump()
             if muni_persistence
             else UnknownValue(reason="source_is_top10_only").model_dump()
+        )
+
+        # §16: a plain boolean pointer to the historical layer, computed by
+        # checking whether any given_name row with this search_key resolves
+        # to a data_source whose measure='attestation'. Deliberately just a
+        # boolean - the historical data itself lives only behind
+        # /api/historical, never duplicated inline here (§16.3 rule 4: the
+        # two corpora are never merged into one response).
+        block["historical_available"] = (
+            session.query(GivenName)
+            .join(DataSource, GivenName.source_key == DataSource.key)
+            .filter(GivenName.search_key == key, DataSource.measure == "attestation")
+            .first()
+            is not None
         )
 
         blocks.append(block)

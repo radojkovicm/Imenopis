@@ -18,7 +18,12 @@ Reason = Literal[
     "scope_not_published",
     "source_has_no_counts",
     "below_confidentiality_threshold",
+    "no_historical_source_for_period",
 ]
+
+# §16.2: independent of Evidence/Status - answers "how much should this
+# specific historical source be trusted for this claim", not "do we know it".
+HistoricalConfidence = Literal["A", "B", "C", "D"]
 
 
 class Scope(BaseModel):
@@ -57,3 +62,20 @@ class UnknownValue(BaseModel):
     evidence: Evidence = "unknown"
     status: Status = "not_observed"
     reason: Reason
+
+
+class HistoricalAttestationValue(BaseModel):
+    """An envelope for a §16 historical name attestation - a sibling of
+    ObservedValue, not a replacement. evidence/status are always
+    'observed'/'observed' (the row exists in a named source); the
+    historical_confidence field is the additional, independent qualifier
+    §16.2 requires and must never be collapsed into evidence/status.
+    """
+
+    value: Any
+    evidence: Evidence = "observed"
+    status: Status = "observed"
+    source: str  # data_source.key, measure='attestation'
+    historical_confidence: HistoricalConfidence
+    citation_note: str
+    scope: Scope | None = None
