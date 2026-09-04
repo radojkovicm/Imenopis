@@ -1,55 +1,19 @@
-<title>imenopis.rs</title>
-<link rel="stylesheet" href="/static/style.css" />
-
-<header class="site-header" id="site-header">
-  <a href="/">imenopis.rs</a>
-  <nav>
-    <a href="/static/about.html">O Imenopisu</a>
-    <a href="/static/historical.html">Istorijska imena</a>
-    <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
-  </nav>
-</header>
-
+<!doctype html>
+<html lang="sr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>imenopis.rs · imena kroz vreme</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header class="site-header" id="site-header"><a href="/">imenopis.rs</a><nav><a href="/static/about.html">O Imenopisu</a><a href="/static/historical.html">Istorijska imena</a><a href="/static/limitations.html">Metodologija</a></nav></header>
 <main>
-  <h1>Kako su se zvali ljudi iz vaše generacije i vašeg kraja?</h1>
-  <p class="lead">
-    Mapa naming mode kroz mesto i generaciju — zasnovana na popisu 2022. i
-    godišnjim statistikama rođenih 2021–2025.
-  </p>
-
-  <div class="entry-points">
-    <a class="entry-point" href="#name-search">
-      <h3>Kako se zoveš?</h3>
-      <p>Pronađi ime i vidi kada je bilo najčešće.</p>
-    </a>
-    <a class="entry-point" href="/static/generation.html">
-      <h3>Rođen/a sam...</h3>
-      <p>Vidi koja su imena bila najčešća te godine.</p>
-    </a>
-    <a class="entry-point" href="/static/municipalities.html">
-      <h3>Izaberi opštinu</h3>
-      <p>Najčešća imena po opštini, kroz generacije, i poređenje sa državom.</p>
-    </a>
-  </div>
-
-  <p class="lead">
-    <a href="/static/newborn.html">Najnovija imena novorođenih (2021–2025) →</a>
-  </p>
-
-  <h2 id="name-search">Pretraga imena</h2>
-  <form class="search-form" id="name-form" autocomplete="off">
-    <input type="text" id="name-input" placeholder="npr. Goran" />
-    <button type="submit">Traži</button>
-  </form>
-  <ul id="suggestions"></ul>
-
-  <div id="result"></div>
+  <p class="eyebrow" style="color:var(--accent-2);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:.75rem">Podaci o imenima Srbije · 2021—2025</p>
+  <h1>Ime nije samo ime.<br><span style="color:var(--accent-2)">To je trag vremena.</span></h1>
+  <p class="lead">Istraži kako se imena menjaju kroz generacije, krajeve i istorijske izvore — uz podatke Republičkog zavoda za statistiku i Popisa 2022.</p>
+  <section class="entry-points" aria-label="Istraži podatke">
+    <a class="entry-point" href="/static/name.html"><h3>Pretraži ime</h3><p>Pronađi ime i vidi gde i kada se pojavljuje.</p></a>
+    <a class="entry-point" href="/static/generation.html"><h3>Generacije</h3><p>Uporedi najčešća imena rođenih različitih godina.</p></a>
+    <a class="entry-point" href="/static/municipalities.html"><h3>Krajevi Srbije</h3><p>Otkrij regionalne razlike i lokalne favorite.</p></a>
+  </section>
+  <a class="latest-callout" href="/static/newborn.html"><span class="latest-kicker">SVEŽE U BAZI · 2025</span><strong>Najnovija imena rođenih</strong><span>Pregledaj top liste devojčica i dečaka po godini i oblasti <b>→</b></span></a>
 </main>
-
-<footer class="site-footer">
-  Izvor: Republički zavod za statistiku (Popis 2022; vitalna statistika
-  2021–2025). Obrada: imenopis.rs. ·
-  <a href="/static/limitations.html">Šta ovaj sajt ne može da vam kaže</a>
-</footer>
-
+<footer class="site-footer">Podaci: Republički zavod za statistiku · Obrada: imenopis.rs · <a href="/static/limitations.html">Ograničenja i metodologija</a></footer>
 <script type="module" src="/static/name-search.js"></script>
+</body></html>
