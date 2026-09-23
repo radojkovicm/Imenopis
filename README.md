@@ -5,8 +5,8 @@ people look up a name, follow its ranking across birth years and generations,
 compare local and national top-ten lists, and browse a small, separately
 curated historical layer.
 
-The public-facing site is planned for **imenopis.rs**. The project is under
-active development and currently runs locally.
+Live at **[imenopis.vercel.app](https://imenopis.vercel.app)**. The
+`imenopis.rs` domain is the intended long-term public name.
 
 > Serbian interface · Cyrillic and Latin display modes · rank data, not name counts
 
@@ -64,9 +64,20 @@ project specification is [PROJECT.md](PROJECT.md).
 - Python 3.11+
 - FastAPI and Pydantic
 - SQLAlchemy
-- SQLite for local development; PostgreSQL 16 for containerized deployment
+- SQLite, bundled prebuilt (`imena.db`) — this site has no data that changes
+  at request time, so the whole database ships with the deployment instead of
+  needing a provisioned one; PostgreSQL 16 remains available for a
+  containerized deployment (`docker-compose.yml`)
 - Vanilla HTML, CSS, and JavaScript (no frontend build step)
-- `pdfplumber` and `openpyxl` for source ingestion
+- `pdfplumber` and `openpyxl` for source ingestion (dev-only, not part of the
+  deployed app)
+
+## Deployment
+
+The production site runs on Vercel as a Python serverless function
+(`api/index.py` re-exports the FastAPI app; see `vercel.json`). It deploys
+automatically from `main`. `imena.db` is committed to the repo and copied to
+`/tmp` on cold start, since the deployment bundle's filesystem is read-only.
 
 ## Run locally (Windows)
 
@@ -128,9 +139,8 @@ The project currently focuses on trustworthy ingestion and representation of
 published rankings. It does not claim to know the number of people with a
 name, nor rank names outside the source's published top-ten/top-five window.
 
-Planned work includes a modern visual redesign, map presentation, expansion of
-the sourced historical corpus, and Docker/VPS/TLS deployment after local
-testing is complete.
+Planned work includes a modern visual redesign, map presentation, and
+expansion of the sourced historical corpus.
 
 ## License and attribution
 
