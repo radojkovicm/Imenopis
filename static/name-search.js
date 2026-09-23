@@ -15,18 +15,28 @@ window.addEventListener("scriptprefchange", () => {
 
 let suggestTimer = null;
 
-input.addEventListener("input", () => {
-  clearTimeout(suggestTimer);
-  const q = input.value.trim();
-  if (q.length < 1) {
+// Pages that only link to the search (e.g. the homepage) include this
+// module solely for installScriptToggle above; they have no search form.
+if (form && input && suggestionsEl && resultEl) {
+  input.addEventListener("input", () => {
+    clearTimeout(suggestTimer);
+    const q = input.value.trim();
+    if (q.length < 1) {
+      suggestionsEl.innerHTML = "";
+      return;
+    }
+    suggestTimer = setTimeout(async () => {
+      const matches = await suggest(q);
+      renderSuggestions(matches);
+    }, 150);
+  });
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
     suggestionsEl.innerHTML = "";
-    return;
-  }
-  suggestTimer = setTimeout(async () => {
-    const matches = await suggest(q);
-    renderSuggestions(matches);
-  }, 150);
-});
+    search(input.value.trim());
+  });
+}
 
 function renderSuggestions(matches) {
   suggestionsEl.innerHTML = "";
@@ -41,12 +51,6 @@ function renderSuggestions(matches) {
     suggestionsEl.appendChild(li);
   }
 }
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  suggestionsEl.innerHTML = "";
-  search(input.value.trim());
-});
 
 async function search(rawQuery) {
   if (!rawQuery) return;
