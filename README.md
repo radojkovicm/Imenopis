@@ -10,6 +10,16 @@ Live at **[imenopis.vercel.app](https://imenopis.vercel.app)**. The
 
 > Serbian interface · Cyrillic and Latin display modes · rank data, not name counts
 
+## Screenshots
+
+| Home | Name search |
+| --- | --- |
+| ![Homepage](docs/screenshots/home.png) | ![Searching a name](docs/screenshots/name-search.png) |
+
+| Birth year (Generacije) | Municipality (Krajevi Srbije) |
+| --- | --- |
+| ![Top names for a birth year](docs/screenshots/generation.png) | ![Top names in Novi Sad by cohort](docs/screenshots/municipality.png) |
+
 ## What is available today
 
 - Search Serbian given names in either script; the display can be switched
