@@ -41,6 +41,7 @@ from src.api.envelope import DerivedValue, ObservedValue, Scope, UnknownValue
 from src.db.models import CensusRank, CensusRankByYear, Cohort, DataSource, District, GivenName, Municipality, NewbornName
 from src.db.session import get_session
 from src.ingest.seed_sources import CENSUS_T1_KEY, CENSUS_T2_KEY
+from src.util.normalize import make_search_key
 
 router = APIRouter(prefix="/api/name", tags=["name"])
 
@@ -249,7 +250,7 @@ def _municipality_data(session: Session, source_form: str, gender: str, rows: li
 
 @router.get("/{search_key}")
 def get_name(search_key: str, gender: str | None = None, session: Session = Depends(_session)):
-    key = search_key.strip().lower()
+    key = make_search_key(search_key)
     query = session.query(GivenName).filter(GivenName.search_key == key)
     if gender:
         query = query.filter(GivenName.gender == gender)

@@ -20,6 +20,7 @@ from src.api.envelope import HistoricalAttestationValue, Scope, UnknownValue
 from src.db.historical_models import HistoricalNameAttestation
 from src.db.models import DataSource, GivenName
 from src.db.session import get_session
+from src.util.normalize import make_search_key
 
 router = APIRouter(prefix="/api/historical", tags=["historical"])
 
@@ -89,7 +90,7 @@ def list_historical(
 
 @router.get("/{search_key}")
 def get_historical(search_key: str, gender: str | None = None, session: Session = Depends(_session)):
-    key = search_key.strip().lower()
+    key = make_search_key(search_key)
     query = (
         session.query(GivenName)
         .join(DataSource, GivenName.source_key == DataSource.key)

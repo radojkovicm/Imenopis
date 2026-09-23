@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.db.models import GivenName
 from src.db.session import get_session
+from src.util.normalize import make_search_key
 
 router = APIRouter(prefix="/api/suggest", tags=["suggest"])
 
@@ -15,7 +16,7 @@ def _session() -> Session:
 
 @router.get("")
 def suggest(q: str = Query(min_length=1), session: Session = Depends(_session)):
-    prefix = q.strip().lower()
+    prefix = make_search_key(q)
     rows = (
         session.query(GivenName.search_key, GivenName.source_form, GivenName.gender)
         .filter(GivenName.search_key.like(f"{prefix}%"))
