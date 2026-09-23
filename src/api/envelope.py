@@ -6,6 +6,8 @@ happened in the source (§4.2) - the two are kept as separate fields, never
 collapsed into one.
 """
 
+from __future__ import annotations
+
 from typing import Any, Literal
 
 from pydantic import BaseModel

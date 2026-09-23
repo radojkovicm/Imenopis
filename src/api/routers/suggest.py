@@ -1,5 +1,7 @@
 """GET /api/suggest (PROJECT.md §12). Prefix match on search_key, limit 10."""
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 

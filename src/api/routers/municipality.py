@@ -6,6 +6,8 @@ never "absent") wherever §5.3 applies: a name outside the Republic top 10 is
 `unknown` on the national side, not a number we don't have.
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 

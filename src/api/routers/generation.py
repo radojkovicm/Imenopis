@@ -8,6 +8,8 @@ first-match routing sends "compare" into the {year}:int path converter and
 fails with a parse error.
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

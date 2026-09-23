@@ -13,6 +13,8 @@ No 404 for an unattested name (§12's rule extended to §16): a name with no
 historical rows is evidence:"unknown", reason:"no_historical_source_for_period".
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

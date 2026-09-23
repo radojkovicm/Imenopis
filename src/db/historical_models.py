@@ -19,6 +19,8 @@ init_db() (even if nothing here is referenced directly) so these tables
 register on Base.metadata before create_all() runs.
 """
 
+from __future__ import annotations
+
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 

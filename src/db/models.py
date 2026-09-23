@@ -9,6 +9,8 @@ This follows the same "nullable column, no migration needed later" pattern the
 spec already uses for every `count` column.
 """
 
+from __future__ import annotations
+
 from datetime import date
 
 from sqlalchemy import (

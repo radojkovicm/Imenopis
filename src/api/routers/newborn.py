@@ -6,6 +6,8 @@ since Phase 0 found the source carries that granularity (docs/DATA_NOTES.md
 BRANCH A resolved rank-only (docs/DATA_NOTES.md §3): count is always null.
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 

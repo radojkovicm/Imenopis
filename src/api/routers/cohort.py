@@ -7,6 +7,8 @@ national #1. This is a direct observed-vs-observed comparison, not a
 computed distance or similarity score - the forbidden kind under §5.1.
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 

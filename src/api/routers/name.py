@@ -34,6 +34,8 @@ No 404 for an unobserved name (§12): a name with no rows is a legitimate
 `evidence: unknown` answer, not an error.
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
