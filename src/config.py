@@ -16,3 +16,13 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# A deployment platform's dashboard can define an env var with an empty
+# value (present but blank), which pydantic-settings treats as "provided"
+# rather than "unset" - it does NOT fall back to the field default the way
+# a missing env var would. Since this site has no real use for either
+# setting being blank, treat blank the same as unset.
+if not settings.SITE_NAME:
+    settings.SITE_NAME = "imenopis.rs"
+if not settings.DATABASE_URL or "://" not in settings.DATABASE_URL:
+    settings.DATABASE_URL = f"sqlite:///{BASE_DIR / 'imena.db'}"
