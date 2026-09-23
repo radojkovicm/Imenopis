@@ -1,3 +1,6 @@
+import os
+import shutil
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -9,8 +12,26 @@ from src.db.models import Base
 # module references it directly.
 from src.db import historical_models  # noqa: F401
 
-connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
+
+def _resolve_database_url(url: str) -> str:
+    """On Vercel the deployment bundle is a read-only filesystem, so the
+    shipped sqlite file can't be opened read-write there (init_db()'s
+    CREATE TABLE IF NOT EXISTS still needs a writable handle even though the
+    schema already exists). Vercel sets VERCEL=1 at runtime; copy the bundled
+    db into /tmp (the one writable path) once per cold start and use that
+    copy instead. No-op for local dev and for a non-sqlite DATABASE_URL."""
+    if not url.startswith("sqlite:///") or not os.environ.get("VERCEL"):
+        return url
+    src_path = url.removeprefix("sqlite:///")
+    tmp_path = "/tmp/imena.db"
+    if not os.path.exists(tmp_path):
+        shutil.copyfile(src_path, tmp_path)
+    return f"sqlite:///{tmp_path}"
+
+
+database_url = _resolve_database_url(settings.DATABASE_URL)
+connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+engine = create_engine(database_url, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
